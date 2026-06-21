@@ -133,6 +133,8 @@ jobs:
             src/lib/database-url.ts \
             deploy \
             scripts/install-apache-vhost.sh \
+            scripts/update-env-file.sh \
+            scripts/prod-db-ping.mjs \
             next.config.ts \
             ecosystem.config.js
 
@@ -219,32 +221,26 @@ jobs:
             tar -xzf deploy.tar.gz
             rm deploy.tar.gz
 
-            sync_env_var() {
-              key="$1"
-              value="$2"
-              touch .env
-              if grep -q "^${key}=" .env; then
-                grep -v "^${key}=" .env > .env.tmp && mv .env.tmp .env
-              fi
-              printf '%s=%s\n' "$key" "$value" >> .env
+            update_env() {
+              bash scripts/update-env-file.sh .env "$1" "$2"
             }
 
             echo "Updating .env..."
-            sync_env_var NODE_ENV production
-            sync_env_var PORT "$PORT"
-            sync_env_var DATABASE_URL "$DATABASE_URL"
-            sync_env_var DB_USER "$DB_USER"
-            sync_env_var DB_PASSWORD "$DB_PASSWORD"
-            sync_env_var DB_HOST "$DB_HOST"
-            sync_env_var DB_PORT "$DB_PORT"
-            sync_env_var DB_NAME "$DB_NAME"
-            sync_env_var AUTH_URL "$AUTH_URL"
-            sync_env_var AUTH_SECRET "$AUTH_SECRET"
-            sync_env_var GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
-            sync_env_var GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
-            sync_env_var ALLOWED_EMAIL "$ALLOWED_EMAIL"
-            sync_env_var DISCORD_WEBHOOK_SIGNUP_URL "$DISCORD_WEBHOOK_SIGNUP_URL"
-            sync_env_var DISCORD_WEBHOOK_LOGIN_URL "$DISCORD_WEBHOOK_LOGIN_URL"
+            update_env NODE_ENV production
+            update_env PORT "$PORT"
+            update_env DATABASE_URL "$DATABASE_URL"
+            update_env DB_USER "$DB_USER"
+            update_env DB_PASSWORD "$DB_PASSWORD"
+            update_env DB_HOST "$DB_HOST"
+            update_env DB_PORT "$DB_PORT"
+            update_env DB_NAME "$DB_NAME"
+            update_env AUTH_URL "$AUTH_URL"
+            update_env AUTH_SECRET "$AUTH_SECRET"
+            update_env GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
+            update_env GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
+            update_env ALLOWED_EMAIL "$ALLOWED_EMAIL"
+            update_env DISCORD_WEBHOOK_SIGNUP_URL "$DISCORD_WEBHOOK_SIGNUP_URL"
+            update_env DISCORD_WEBHOOK_LOGIN_URL "$DISCORD_WEBHOOK_LOGIN_URL"
 
             echo "Installing production dependencies..."
             npm install --omit=dev --no-audit --prefer-offline
@@ -264,6 +260,7 @@ jobs:
 
             echo "Health check..."
             sleep 5
+            node scripts/prod-db-ping.mjs
             curl -fsS "http://127.0.0.1:${PORT}/login" >/dev/null
             echo "Deployment successful."
 

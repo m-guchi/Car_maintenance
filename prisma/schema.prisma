@@ -68,7 +68,7 @@ model VerificationToken {
 }
 
 model Authenticator {
-  credentialID         String  @map("credential_id")
+  credentialID         String  @unique @map("credential_id")
   userId               String  @map("user_id")
   providerAccountId    String  @map("provider_account_id")
   credentialPublicKey  String  @map("credential_public_key") @db.Text

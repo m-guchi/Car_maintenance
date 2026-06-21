@@ -131,6 +131,8 @@ jobs:
             prisma \
             prisma.config.ts \
             src/lib/database-url.ts \
+            deploy \
+            scripts/install-apache-vhost.sh \
             next.config.ts \
             ecosystem.config.js
 
@@ -211,7 +213,7 @@ jobs:
             PORT="${APP_PORT:-3104}"
 
             echo "Cleaning up old release files..."
-            rm -rf .next public package.json package-lock.json prisma prisma.config.ts src/lib/database-url.ts next.config.ts ecosystem.config.js
+            rm -rf .next public package.json package-lock.json prisma prisma.config.ts src/lib/database-url.ts deploy scripts/install-apache-vhost.sh next.config.ts ecosystem.config.js
 
             echo "Extracting archive..."
             tar -xzf deploy.tar.gz

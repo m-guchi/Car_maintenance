@@ -82,3 +82,6 @@ fi
 touch .env
 echo "==> Bootstrap complete."
 echo "    Next: merge to main to trigger GitHub Actions deploy."
+echo ""
+echo "Apache で公開する場合（未設定だと Apache2 デフォルトページが表示されます）:"
+echo "  bash scripts/install-apache-vhost.sh"

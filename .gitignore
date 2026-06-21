@@ -47,3 +47,6 @@ next-env.d.ts
 
 # prisma (v7 generated client)
 /generated
+
+# deploy (server-specific Apache vhost)
+deploy/apache-vhost.local.conf

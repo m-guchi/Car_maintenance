@@ -112,3 +112,62 @@ export function buildDatabaseUrl(): string {
 export function usesUnixSocket(): boolean {
   return buildDatabaseUrl().includes("socket=");
 }
+
+type MariaDbAdapterConfig = {
+  user?: string;
+  password?: string;
+  database?: string;
+  host?: string;
+  port?: number;
+  socketPath?: string;
+  connectionLimit: number;
+};
+
+/** Prisma v7 MariaDB driver adapter 用の接続設定 */
+export function buildMariaDbAdapterConfig(): MariaDbAdapterConfig {
+  const { useProdDb, host, port, user, password, name } = getDatabaseConfig();
+
+  if (!user || !password) {
+    return {
+      host: DEV_DB_HOST,
+      port: Number(DEV_DB_PORT),
+      user: "placeholder",
+      password: "placeholder",
+      database: "car_maintenance",
+      connectionLimit: 5,
+    };
+  }
+
+  const base: MariaDbAdapterConfig = {
+    user,
+    password,
+    database: name,
+    connectionLimit: 5,
+  };
+
+  if (!useProdDb) {
+    const socket = resolveLocalSocket();
+    if (socket) {
+      return { ...base, socketPath: socket };
+    }
+    return {
+      ...base,
+      host: DEV_DB_HOST,
+      port: Number(DEV_DB_PORT),
+    };
+  }
+
+  if (!host || !port) {
+    return {
+      ...base,
+      host: DEV_DB_HOST,
+      port: Number(DEV_DB_PORT),
+    };
+  }
+
+  return {
+    ...base,
+    host: normalizeMysqlHost(host),
+    port: Number(port),
+  };
+}

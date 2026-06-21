@@ -6,13 +6,18 @@ import { defineConfig } from "prisma/config";
 
 import { buildDatabaseUrl } from "./src/lib/database-url";
 
+function resolveDatabaseUrl(): string {
+  const fromEnv = process.env.DATABASE_URL?.trim();
+  if (fromEnv) return fromEnv;
+  return buildDatabaseUrl();
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
-  engine: "classic",
   datasource: {
-    url: buildDatabaseUrl(),
+    url: resolveDatabaseUrl(),
   },
 });

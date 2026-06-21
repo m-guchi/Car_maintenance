@@ -104,7 +104,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20.19"
           cache: npm
 
       - name: Install dependencies
@@ -129,6 +129,8 @@ jobs:
             public \
             .next \
             prisma \
+            prisma.config.ts \
+            src/lib/database-url.ts \
             next.config.ts \
             ecosystem.config.js
 
@@ -209,7 +211,7 @@ jobs:
             PORT="${APP_PORT:-3104}"
 
             echo "Cleaning up old release files..."
-            rm -rf .next public package.json package-lock.json prisma next.config.ts ecosystem.config.js
+            rm -rf .next public package.json package-lock.json prisma prisma.config.ts src/lib/database-url.ts next.config.ts ecosystem.config.js
 
             echo "Extracting archive..."
             tar -xzf deploy.tar.gz

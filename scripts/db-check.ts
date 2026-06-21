@@ -2,8 +2,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 
-import { PrismaClient } from "@prisma/client";
-
+import { prisma } from "../src/lib/prisma";
 import {
   buildDatabaseUrl,
   DEV_DB_HOST,
@@ -136,16 +135,14 @@ async function main() {
     }
   }
 
-  const prisma = new PrismaClient({
-    datasources: { db: { url: buildDatabaseUrl() } },
-  });
+  const prismaClient = prisma;
 
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await prismaClient.$queryRaw`SELECT 1`;
     console.log("");
     console.log("Prisma 接続: OK");
 
-    const tables = await prisma.$queryRaw<Array<{ TABLE_NAME: string }>>`
+    const tables = await prismaClient.$queryRaw<Array<{ TABLE_NAME: string }>>`
       SHOW TABLES
     `;
     console.log(`テーブル数: ${tables.length}`);
@@ -169,7 +166,7 @@ async function main() {
     }
     process.exit(1);
   } finally {
-    await prisma.$disconnect();
+    await prismaClient.$disconnect();
   }
 }
 

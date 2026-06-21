@@ -29,19 +29,18 @@ export type FuelDashboardStats = {
   priceTrend: PriceTrendPoint[];
 };
 
-type FuelLogLike = Pick<
-  FuelLog,
-  | "date"
-  | "distanceKm"
-  | "fuelAmount"
-  | "pricePerLiter"
-  | "totalCost"
-  | "isFull"
->;
+type NumericLike = number | FuelLog["distanceKm"] | FuelLog["fuelAmount"];
 
-function toNumber(
-  value: FuelLogLike["fuelAmount"] | FuelLogLike["distanceKm"],
-): number {
+type FuelLogLike = {
+  date: Date;
+  distanceKm: NumericLike;
+  fuelAmount: NumericLike;
+  pricePerLiter: number;
+  totalCost: number;
+  isFull: boolean;
+};
+
+function toNumber(value: NumericLike): number {
   return Number(value);
 }
 
@@ -123,7 +122,7 @@ export function computePriceTrend(logs: FuelLogLike[]): PriceTrendPoint[] {
 }
 
 export function computeFuelEfficiencyForLog(
-  log: Pick<FuelLog, "isFull" | "distanceKm" | "fuelAmount">,
+  log: Pick<FuelLogLike, "isFull" | "distanceKm" | "fuelAmount">,
 ): number | null {
   if (!log.isFull) {
     return null;

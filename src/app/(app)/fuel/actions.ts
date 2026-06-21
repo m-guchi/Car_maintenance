@@ -317,7 +317,13 @@ export async function createFuelLogAction(
     const parsed = await parseFuelForm(userId, formData);
 
     if ("error" in parsed) {
-      return { ok: false, error: parsed.error };
+      return {
+        ok: false,
+        error:
+          typeof parsed.error === "string"
+            ? parsed.error
+            : "入力内容を確認してください",
+      };
     }
 
     const created = await createFuelLog(userId, vehicleId, parsed.data);
@@ -353,7 +359,13 @@ export async function updateFuelLogAction(
     const parsed = await parseFuelForm(userId, formData);
 
     if ("error" in parsed) {
-      return { ok: false, error: parsed.error };
+      return {
+        ok: false,
+        error:
+          typeof parsed.error === "string"
+            ? parsed.error
+            : "入力内容を確認してください",
+      };
     }
 
     const updated = await updateFuelLog(userId, fuelLogId, parsed.data);

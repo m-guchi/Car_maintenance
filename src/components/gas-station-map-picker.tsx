@@ -18,7 +18,10 @@ import {
   type GasStation,
   type KnownGasStation,
 } from "@/lib/gas-stations";
-import type { GasStationBrandRecord } from "@/lib/gas-station-brand-types";
+import {
+  OTHER_GAS_STATION_BRAND_NAME,
+  type GasStationBrandRecord,
+} from "@/lib/gas-station-brand-types";
 
 type GasStationMapPickerProps = {
   selectedStationId: string | null;
@@ -54,6 +57,69 @@ function createPinIcon(color: string, size: number, ringColor?: string) {
   };
 }
 
+const GAS_STATION_PUMP_SVG =
+  '<path d="M19.77 7.23l.01-.01-3.72-3.72L15 4.56l2.11 2.11c-.94.36-1.61 1.26-1.61 2.33a2.5 2.5 0 0 0 2.5 2.5c.36 0 .69-.08 1-.21v7.21c0 .55-.45 1-1 1h-8c-.55 0-1-.45-1-1V10c0-.55.45-1 1-1h1V5c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v4h1c.55 0 1 .45 1 1z"/>';
+
+type GasStationIconVariant = "default" | "known" | "selected";
+
+function createGasStationIcon(variant: GasStationIconVariant) {
+  const palette: Record<
+    GasStationIconVariant,
+    { bg: string; ring?: string; size: number; iconSize: number }
+  > = {
+    default: { bg: "#f59e0b", size: 28, iconSize: 15 },
+    known: { bg: "#7c3aed", ring: "#c4b5fd", size: 28, iconSize: 15 },
+    selected: { bg: "#10b981", ring: "#6ee7b7", size: 32, iconSize: 17 },
+  };
+  const { bg, ring, size, iconSize } = palette[variant];
+  const shadow = ring
+    ? `box-shadow:0 0 0 3px ${ring};`
+    : "box-shadow:0 2px 6px rgba(15,23,42,0.25);";
+
+  return {
+    className: "",
+    html: `<div style="display:flex;align-items:center;justify-content:center;width:${size}px;height:${size}px;border-radius:8px;border:2px solid white;background:${bg};${shadow}">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}" fill="white" aria-hidden="true">${GAS_STATION_PUMP_SVG}</svg>
+    </div>`,
+    iconSize: [size, size] as [number, number],
+    iconAnchor: [size / 2, size / 2] as [number, number],
+  };
+}
+
+function getGasStationIconVariant(
+  isSelected: boolean,
+  isKnown: boolean,
+): GasStationIconVariant {
+  if (isSelected) {
+    return "selected";
+  }
+
+  if (isKnown) {
+    return "known";
+  }
+
+  return "default";
+}
+
+function createPlusIcon(size: number, color: string, stroke: number) {
+  const half = size / 2;
+  const bar = `position:absolute;background:${color};border-radius:9999px;`;
+
+  return {
+    className: "",
+    html: `<div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="${bar}top:50%;left:0;right:0;height:${stroke}px;transform:translateY(-50%);"></div>
+      <div style="${bar}left:50%;top:0;bottom:0;width:${stroke}px;transform:translateX(-50%);"></div>
+    </div>`,
+    iconSize: [size, size] as [number, number],
+    iconAnchor: [half, half] as [number, number],
+  };
+}
+
+function createSearchCenterIcon() {
+  return createPlusIcon(24, "#94a3b8", 2);
+}
+
 type LoadPhase = "pending" | "loading" | "error" | "ready";
 
 function buildKnownStationMap(knownStations: KnownGasStation[]) {
@@ -84,6 +150,71 @@ function getStationDisplayInfo(
     ...selection,
     isKnown: Boolean(known),
   };
+}
+
+type StationDisplayInfo = ReturnType<typeof getStationDisplayInfo>;
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function getEffectiveBrand(info: StationDisplayInfo): string {
+  if (info.brandSelect === OTHER_GAS_STATION_BRAND_NAME) {
+    return info.customBrand.trim();
+  }
+
+  return info.brandSelect.trim();
+}
+
+function buildStationPopupHtml(
+  info: StationDisplayInfo,
+  station: GasStation,
+  isSelected = false,
+) {
+  const title =
+    info.registrationName.trim() ||
+    info.storeName.trim() ||
+    info.mapName.trim() ||
+    "名称不明";
+
+  const statusBadge = info.isKnown
+    ? `<span style="display:inline-block;padding:2px 8px;border-radius:9999px;background:#ede9fe;color:#6d28d9;font-size:11px;font-weight:600;">★ 登録済み</span>`
+    : `<span style="display:inline-block;padding:2px 8px;border-radius:9999px;background:#f1f5f9;color:#64748b;font-size:11px;">未登録</span>`;
+
+  const selectedBadge = isSelected
+    ? `<span style="display:inline-block;padding:2px 8px;border-radius:9999px;background:#d1fae5;color:#047857;font-size:11px;font-weight:600;">選択中</span>`
+    : "";
+
+  const parts = [
+    `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;">${statusBadge}${selectedBadge}</div>`,
+    `<div style="font-weight:600;font-size:14px;line-height:1.35;">${escapeHtml(title)}</div>`,
+  ];
+
+  const brand = getEffectiveBrand(info) || station.brand?.trim();
+
+  if (brand) {
+    parts.push(
+      `<div style="margin-top:6px;font-size:12px;color:#64748b;">ブランド: ${escapeHtml(brand)}</div>`,
+    );
+  }
+
+  if (info.mapName.trim() && info.mapName !== title) {
+    parts.push(
+      `<div style="margin-top:4px;font-size:11px;color:#94a3b8;">地図上の名称: ${escapeHtml(info.mapName)}</div>`,
+    );
+  }
+
+  if (station.address?.trim()) {
+    parts.push(
+      `<div style="margin-top:4px;font-size:11px;color:#94a3b8;">${escapeHtml(station.address)}</div>`,
+    );
+  }
+
+  return `<div style="min-width:150px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;line-height:1.4;color:#0f172a;">${parts.join("")}</div>`;
 }
 
 async function fetchNearbyStations(lat: number, lon: number): Promise<GasStation[]> {
@@ -321,24 +452,32 @@ export function GasStationMapPicker({
 
     const isSearchCenter = mapCenter.label === "検索地点";
 
-    if (isSearchCenter) {
-      centerMarkerRef.current?.remove();
-      centerMarkerRef.current = null;
-      return;
-    }
-
     if (centerMarkerRef.current) {
       centerMarkerRef.current.setLatLng([mapCenter.lat, mapCenter.lon]);
       centerMarkerRef.current.setPopupContent(mapCenter.label);
+      centerMarkerRef.current.setIcon(
+        L.divIcon(
+          isSearchCenter
+            ? createSearchCenterIcon()
+            : createPinIcon(mapCenter.isFallback ? "#64748b" : "#2563eb", 16),
+        ),
+      );
+      centerMarkerRef.current.setZIndexOffset(isSearchCenter ? 1100 : 1000);
     } else {
-      const markerColor = mapCenter.isFallback ? "#64748b" : "#2563eb";
-
       centerMarkerRef.current = L.marker([mapCenter.lat, mapCenter.lon], {
-        icon: L.divIcon(createPinIcon(markerColor, 16)),
-        zIndexOffset: 1000,
+        icon: L.divIcon(
+          isSearchCenter
+            ? createSearchCenterIcon()
+            : createPinIcon(mapCenter.isFallback ? "#64748b" : "#2563eb", 16),
+        ),
+        zIndexOffset: isSearchCenter ? 1100 : 1000,
       })
         .addTo(map)
         .bindPopup(mapCenter.label);
+
+      if (isSearchCenter) {
+        centerMarkerRef.current.openPopup();
+      }
     }
   }, [mapCenter]);
 
@@ -356,16 +495,18 @@ export function GasStationMapPicker({
 
     for (const station of stations) {
       const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
-      const popupLabel = info.storeName.trim() || info.mapName;
       const marker = L.marker([station.lat, station.lon], {
-        icon: L.divIcon(createPinIcon("#f59e0b", 16)),
+        icon: L.divIcon(
+          createGasStationIcon(getGasStationIconVariant(false, info.isKnown)),
+        ),
       })
         .addTo(map)
-        .bindPopup(popupLabel);
+        .bindPopup(buildStationPopupHtml(info, station), { maxWidth: 240 });
 
       marker.on("click", () => {
-        marker.openPopup();
         const selected = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
+        marker.setPopupContent(buildStationPopupHtml(selected, station, true));
+        marker.openPopup();
         onSelectStation({
           id: toOsmId(station.id),
           mapName: selected.mapName,
@@ -408,15 +549,14 @@ export function GasStationMapPicker({
 
       marker.setIcon(
         L.divIcon(
-          createPinIcon(
-            isSelected ? "#10b981" : info.isKnown ? "#7c3aed" : "#f59e0b",
-            isSelected ? 20 : 16,
-            isSelected ? "#6ee7b7" : info.isKnown ? "#c4b5fd" : undefined,
+          createGasStationIcon(
+            getGasStationIconVariant(isSelected, info.isKnown),
           ),
         ),
       );
+      marker.setPopupContent(buildStationPopupHtml(info, station, isSelected));
     }
-  }, [selectedStationId, stations, knownByOsmId]);
+  }, [selectedStationId, stations, knownByOsmId, gasStationBrands]);
 
   function handleSelectFromList(station: GasStation) {
     const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
@@ -477,6 +617,13 @@ export function GasStationMapPicker({
           aria-label="周辺のガソリンスタンド地図"
         />
 
+        <div
+          className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center text-2xl font-light leading-none text-slate-400/45 dark:text-slate-500/50"
+          aria-hidden="true"
+        >
+          +
+        </div>
+
         {mapReady && (
           <button
             type="button"
@@ -490,6 +637,12 @@ export function GasStationMapPicker({
           </button>
         )}
       </div>
+
+      {mapReady && (
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          地図中央の + が再検索の中心です。検索後は同じ + マークで検索地点を表示します。
+        </p>
+      )}
 
       {phase !== "error" && phase !== "ready" && (
         <p className="text-sm text-slate-500">現在地と周辺スタンドを読み込み中...</p>
@@ -532,7 +685,7 @@ export function GasStationMapPicker({
       {stations.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            地図のピンまたは一覧からスタンドを選択
+            地図の⛽アイコンまたは一覧からスタンドを選択
           </p>
 
           <ul className="max-h-48 space-y-2 overflow-y-auto">

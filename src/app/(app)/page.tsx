@@ -3,46 +3,10 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { PasskeyRegisterCard } from "@/components/passkey-register-card";
+import { menuItems } from "@/lib/nav-items";
 import { hasRegisteredPasskeys } from "@/lib/passkey";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { listVehicles } from "@/lib/vehicles";
-
-const featureCards = [
-  {
-    title: "給油記録",
-    desc: "燃費・ガソリン代の管理",
-    emoji: "⛽",
-    accent:
-      "border-l-amber-400 bg-amber-50/50 hover:border-amber-300 dark:border-l-amber-500 dark:bg-amber-950/30 dark:hover:border-amber-400",
-    iconBg: "bg-amber-100 dark:bg-amber-900/40",
-  },
-  {
-    title: "メンテナンス",
-    desc: "カテゴリ別の整備履歴",
-    emoji: "🔧",
-    accent:
-      "border-l-violet-400 bg-violet-50/50 hover:border-violet-300 dark:border-l-violet-500 dark:bg-violet-950/30 dark:hover:border-violet-400",
-    iconBg: "bg-violet-100 dark:bg-violet-900/40",
-  },
-  {
-    title: "車両管理",
-    desc: "複数台・買い替え対応",
-    emoji: "🚙",
-    href: "/vehicles",
-    ready: true,
-    accent:
-      "border-l-emerald-400 bg-emerald-50/50 hover:border-emerald-300 dark:border-l-emerald-500 dark:bg-emerald-950/30 dark:hover:border-emerald-400",
-    iconBg: "bg-emerald-100 dark:bg-emerald-900/40",
-  },
-  {
-    title: "設定",
-    desc: "カテゴリ・パスキー管理",
-    emoji: "⚙️",
-    accent:
-      "border-l-slate-300 bg-slate-50/50 dark:border-l-slate-500 dark:bg-slate-800/50",
-    iconBg: "bg-slate-100 dark:bg-slate-700",
-  },
-] as const;
 
 export default async function HomePage() {
   const session = await auth();
@@ -62,7 +26,7 @@ export default async function HomePage() {
         subtitle={email ?? "ダッシュボード"}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:max-w-4xl">
+      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:max-w-5xl">
         {email && (
           <div className="mb-6">
             <PasskeyRegisterCard hasPasskey={hasPasskey} />
@@ -109,7 +73,7 @@ export default async function HomePage() {
         </h2>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          {featureCards.map((item) => {
+          {menuItems.map((item) => {
             const card = (
               <div className="flex items-start gap-3">
                 <span
@@ -121,11 +85,7 @@ export default async function HomePage() {
                 <div className="min-w-0">
                   <h3 className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</h3>
                   <p className="mt-0.5 text-sm app-text-muted">{item.desc}</p>
-                  {"ready" in item && item.ready ? (
-                    <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                      利用可能
-                    </span>
-                  ) : (
+                  {!item.ready && (
                     <span className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
                       準備中
                     </span>
@@ -135,12 +95,10 @@ export default async function HomePage() {
             );
 
             const cardClassName = `rounded-xl border border-slate-200/80 border-l-4 p-4 shadow-sm transition dark:border-slate-700/80 ${item.accent} ${
-              "href" in item && item.href
-                ? "hover:shadow-md"
-                : "opacity-70"
+              item.href ? "hover:shadow-md" : "opacity-70"
             }`;
 
-            if ("href" in item && item.href) {
+            if (item.href) {
               return (
                 <Link key={item.title} href={item.href} className={cardClassName}>
                   {card}

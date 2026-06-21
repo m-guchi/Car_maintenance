@@ -5,7 +5,7 @@ import { useActionState, useEffect, useRef } from "react";
 import {
   createVehicleAction,
   type VehicleActionState,
-} from "@/app/vehicles/actions";
+} from "@/app/(app)/vehicles/actions";
 import { VehicleFormFields } from "@/components/vehicle-form-fields";
 
 const initialState: VehicleActionState = { ok: false };

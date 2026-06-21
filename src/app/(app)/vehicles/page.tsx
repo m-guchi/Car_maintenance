@@ -15,11 +15,9 @@ export default async function VehiclesPage() {
       <AppHeader
         title="車両管理"
         subtitle={session?.user?.email ?? undefined}
-        backHref="/"
-        backLabel="ホーム"
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:max-w-4xl">
+      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:max-w-5xl">
         <VehicleForm />
         <VehicleList vehicles={vehicles} />
       </div>

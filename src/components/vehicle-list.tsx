@@ -6,7 +6,7 @@ import {
   deleteVehicleAction,
   updateVehicleAction,
   type VehicleActionState,
-} from "@/app/vehicles/actions";
+} from "@/app/(app)/vehicles/actions";
 import { VehicleDetails } from "@/components/vehicle-details";
 import { VehicleFormFields } from "@/components/vehicle-form-fields";
 import type { VehicleRecord } from "@/lib/vehicles";

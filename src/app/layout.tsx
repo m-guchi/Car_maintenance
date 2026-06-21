@@ -41,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ja" className="h-full">
-      <body className="min-h-full text-slate-900 antialiased dark:text-slate-100">
+      <body className="flex min-h-full flex-col text-slate-900 antialiased dark:text-slate-100">
         <AuthProvider>
           {children}
           <ServiceWorkerRegister />

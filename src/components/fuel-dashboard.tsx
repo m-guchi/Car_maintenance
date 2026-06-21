@@ -4,9 +4,9 @@ import {
   formatFuelEfficiency,
 } from "@/lib/fuel-display";
 import type { FuelDashboardStats } from "@/lib/fuel-stats";
-import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
+import { formatOdometer } from "@/lib/vehicle-display";
 
-import { BarChart } from "@/components/bar-chart";
+import { FuelEfficiencyTrendChart } from "@/components/fuel-efficiency-trend-chart";
 import { FuelPriceTrendChart } from "@/components/fuel-price-trend-chart";
 import { MonthlyFuelCostChart } from "@/components/monthly-fuel-cost-chart";
 
@@ -53,11 +53,6 @@ type FuelDashboardProps = {
 };
 
 export function FuelDashboard({ stats }: FuelDashboardProps) {
-  const efficiencyChartItems = stats.efficiencyHistory.map((item) => ({
-    label: formatDateJa(item.date),
-    kmPerLiter: item.kmPerLiter,
-  }));
-
   return (
     <section className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -139,12 +134,12 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
             燃費の推移
           </h3>
           <div className="mt-4">
-            <BarChart
-              items={efficiencyChartItems}
-              valueKey="kmPerLiter"
-              labelKey="label"
-              formatValue={(value) => formatFuelEfficiency(value)}
-              colorClassName="bg-emerald-500"
+            <FuelEfficiencyTrendChart
+              efficiencyHistory={stats.efficiencyHistory.map((point) => ({
+                date: point.date.toISOString(),
+                kmPerLiter: point.kmPerLiter,
+                distanceKm: point.distanceKm,
+              }))}
             />
           </div>
         </div>

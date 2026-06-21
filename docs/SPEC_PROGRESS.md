@@ -83,7 +83,7 @@
 
 | 要件 | 状態 |
 |------|------|
-| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除 |
+| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除 |
 | ダッシュボード（燃費・月別費用・価格推移グラフ） | ✅ | `fuel-dashboard.tsx` |
 | 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-search.tsx`, `/api/gas-stations` |
 
@@ -208,6 +208,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | 給油記録のまとめて削除（選択モード・`deleteFuelLogsAction`） |
+| 2026-06-21 | 削除確認をアプリ内 UI に統一（`delete-confirm-panel.tsx`、給油・ブランド設定） |
 | 2026-06-21 | 開発環境から本番 DB 確認（`db:*:prod`、SSH トンネル、`DB_TARGET=production`） |
 | 2026-06-21 | モバイルファースト UI（ボトムナビ・AppPage・safe-area・44px タップ領域・inputMode） |
 | 2026-06-21 | Git tag / GitHub Release workflow 追加（Portfolio 同様、`release.yml` 含む） |

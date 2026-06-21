@@ -181,12 +181,35 @@ function buildStationDisplayName(
   return name;
 }
 
+function deduplicateStationsByLocation(
+  stations: GasStationSearchResult[],
+): GasStationSearchResult[] {
+  const seenLocations = new Set<string>();
+  const deduped: GasStationSearchResult[] = [];
+
+  for (const station of stations) {
+    const locationKey = `${station.lat.toFixed(5)},${station.lon.toFixed(5)}`;
+
+    if (seenLocations.has(locationKey)) {
+      continue;
+    }
+
+    seenLocations.add(locationKey);
+    deduped.push(station);
+  }
+
+  return deduped;
+}
+
 function sortAndLimitStations(
   stations: GasStationSearchResult[],
   limit: number,
 ): GasStationSearchResult[] {
-  stations.sort((left, right) => left.distanceMeters - right.distanceMeters);
-  return stations.slice(0, limit);
+  const sorted = [...stations].sort(
+    (left, right) => left.distanceMeters - right.distanceMeters,
+  );
+
+  return deduplicateStationsByLocation(sorted).slice(0, limit);
 }
 
 async function fetchOverpassData(query: string): Promise<OverpassResponse | null> {
@@ -256,13 +279,25 @@ function mapOverpassElements(
   return stations;
 }
 
+function buildOverpassFuelQuery(lat: number, lon: number, radius: number): string {
+  const around = `(around:${radius},${lat},${lon})`;
+  const fuelTags = [
+    `node["amenity"="fuel"]${around}`,
+    `way["amenity"="fuel"]${around}`,
+    `relation["amenity"="fuel"]${around}`,
+    `node["shop"="fuel"]${around}`,
+    `way["shop"="fuel"]${around}`,
+  ];
+
+  return `[out:json][timeout:25];(${fuelTags.join(";")};);out center;`;
+}
+
 async function searchWithOverpass(
   lat: number,
   lon: number,
   radius: number,
 ): Promise<GasStationSearchResult[] | null> {
-  const query = `[out:json][timeout:25];(node["amenity"="fuel"](around:${radius},${lat},${lon});way["amenity"="fuel"](around:${radius},${lat},${lon}););out center 40;`;
-  const data = await fetchOverpassData(query);
+  const data = await fetchOverpassData(buildOverpassFuelQuery(lat, lon, radius));
 
   if (!data) {
     return null;
@@ -280,7 +315,7 @@ async function searchWithNominatim(
   const params = new URLSearchParams({
     format: "json",
     amenity: "fuel",
-    limit: "30",
+    limit: "50",
     viewbox,
     bounded: "1",
   });
@@ -364,14 +399,14 @@ export async function searchNearbyGasStations(
 ): Promise<GasStationSearchResult[] | null> {
   const overpassStations = await searchWithOverpass(lat, lon, radius);
 
-  if (overpassStations) {
+  if (overpassStations !== null && overpassStations.length > 0) {
     return sortAndLimitStations(overpassStations, limit);
   }
 
   const nominatimStations = await searchWithNominatim(lat, lon, radius);
 
   if (!nominatimStations) {
-    return null;
+    return overpassStations;
   }
 
   return sortAndLimitStations(nominatimStations, limit);

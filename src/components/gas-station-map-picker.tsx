@@ -489,12 +489,16 @@ export function GasStationMapPicker({
       return;
     }
 
+    const centerLat = mapCenter?.lat ?? OSAKA_STATION_FALLBACK.lat;
+    const centerLon = mapCenter?.lon ?? OSAKA_STATION_FALLBACK.lon;
+    const stationMarkers = stationMarkersRef.current;
+
     let disposed = false;
 
     centerMarkerRef.current?.remove();
     centerMarkerRef.current = null;
-    stationMarkersRef.current.forEach((marker) => marker.remove());
-    stationMarkersRef.current.clear();
+    stationMarkers.forEach((marker) => marker.remove());
+    stationMarkers.clear();
     mapRef.current?.remove();
     mapRef.current = null;
     tileLayerRef.current = null;
@@ -507,8 +511,8 @@ export function GasStationMapPicker({
 
       const L = leafletRef.current;
       const saved = lastMapViewRef.current;
-      const lat = saved?.lat ?? mapCenter?.lat ?? OSAKA_STATION_FALLBACK.lat;
-      const lng = saved?.lng ?? mapCenter?.lon ?? OSAKA_STATION_FALLBACK.lon;
+      const lat = saved?.lat ?? centerLat;
+      const lng = saved?.lng ?? centerLon;
       const zoom = saved?.zoom ?? 14;
 
       const map = L.map(mapContainerRef.current, {
@@ -561,14 +565,14 @@ export function GasStationMapPicker({
       window.cancelAnimationFrame(frame);
       centerMarkerRef.current?.remove();
       centerMarkerRef.current = null;
-      stationMarkersRef.current.forEach((marker) => marker.remove());
-      stationMarkersRef.current.clear();
+      stationMarkers.forEach((marker) => marker.remove());
+      stationMarkers.clear();
       tileLayerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
       setMapReady(false);
     };
-  }, [isMapExpanded]);
+  }, [isMapExpanded, mapCenter?.lat, mapCenter?.lon]);
 
   useEffect(() => {
     const map = mapRef.current;

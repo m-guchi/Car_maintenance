@@ -85,9 +85,9 @@
 
 | 要件 | 状態 |
 |------|------|
-| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択 |
+| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択・入力時の燃費自動計算表示 |
 | 登録店舗管理（設定画面） | ✅ | `registered-gas-station-settings.tsx`, `registered_gas_stations` テーブル |
-| ダッシュボード（燃費・月別費用・価格推移グラフ） | ✅ | `fuel-dashboard.tsx` |
+| ダッシュボード（燃費・月別費用・価格推移グラフ・総走行距離・登録以降の走行距離） | ✅ | `fuel-dashboard.tsx`, `FuelMileageSummary`, `trend-line-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx`（月日×値軸の折れ線） |
 | 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-search.tsx`, `/api/gas-stations` |
 
 ### ③ メンテナンス記録 & カテゴリ動的管理
@@ -211,6 +211,13 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-22 | v1.1.0: 給油ダッシュボード強化（燃費・単価の折れ線グラフ、月別給油費の展開表示、走行距離サマリー）、入力時燃費表示、周辺スタンド検索改善 |
+| 2026-06-22 | 燃費の推移グラフを単価推移と同じ折れ線グラフ（月日×燃費）に統一（`TrendLineChart` 共通化） |
+| 2026-06-22 | 周辺ガソリンスタンド検索の精度改善（Overpass 件数上限除去・距離順ソート・`shop=fuel` / relation 対応） |
+| 2026-06-22 | 単価推移グラフを月日（横軸）× 単価（縦軸）に改善し、店舗ごとの切替を追加 |
+| 2026-06-22 | 給油履歴の走行距離表示を総走行距離から登録以降の累計走行距離に変更 |
+| 2026-06-22 | 給油情報画面に総走行距離・登録以降の走行距離を表示（`FuelMileageSummary`） |
+| 2026-06-22 | 給油入力フォームに燃費の自動計算表示（距離・給油量・満タンからリアルタイム算出） |
 | 2026-06-22 | v1.0.1: 本番パスキーログイン修正（`authenticators.credential_id` に unique 追加）、デプロイ `.env` クォート・DB ヘルスチェック |
 | 2026-06-21 | 設定画面に登録店舗管理（編集・削除・登録画面への非表示、`registered_gas_stations`） |
 | 2026-06-21 | 給油フォームに登録済み店舗クイック選択（`registered-gas-station-picker.tsx`） |

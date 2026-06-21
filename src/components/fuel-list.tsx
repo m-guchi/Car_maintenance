@@ -14,6 +14,7 @@ import { DeleteConfirmPanel } from "@/components/delete-confirm-panel";
 import { FuelFormFields } from "@/components/fuel-form-fields";
 import {
   formatCurrency,
+  formatDistanceKmValue,
   formatDistanceSinceLastFill,
   formatFuelAmount,
   formatFuelEfficiency,
@@ -22,8 +23,12 @@ import {
 import { computeFuelEfficiencyForLog } from "@/lib/fuel-stats";
 import type { GasStationBrandRecord } from "@/lib/gas-station-brand-types";
 import type { KnownGasStation } from "@/lib/gas-stations";
-import { getPreviousOdometer, type FuelLogClientRecord } from "@/lib/fuel-types";
-import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
+import {
+  buildCumulativeDistanceByLogId,
+  getPreviousOdometer,
+  type FuelLogClientRecord,
+} from "@/lib/fuel-types";
+import { formatDateJa } from "@/lib/vehicle-display";
 
 type FuelListProps = {
   fuelLogs: FuelLogClientRecord[];
@@ -114,6 +119,7 @@ function FuelLogCard({
   fuelLog,
   fuelLogs,
   vehicleInitialOdometer,
+  cumulativeDistanceKm,
   knownGasStations,
   pickerGasStations,
   gasStationBrands,
@@ -124,6 +130,7 @@ function FuelLogCard({
   fuelLog: FuelLogClientRecord;
   fuelLogs: FuelLogClientRecord[];
   vehicleInitialOdometer?: number | null;
+  cumulativeDistanceKm: number;
   knownGasStations: KnownGasStation[];
   pickerGasStations: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
@@ -193,12 +200,10 @@ function FuelLogCard({
             </p>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
               {formatDistanceSinceLastFill(fuelLog.distanceKm)}
-              {fuelLog.odometer != null && (
-                <span className="text-slate-500">
-                  {" "}
-                  · {formatOdometer(fuelLog.odometer)}
-                </span>
-              )}
+              <span className="text-slate-500">
+                {" "}
+                · {formatDistanceKmValue(cumulativeDistanceKm)}
+              </span>
             </p>
           </div>
         </div>
@@ -301,6 +306,7 @@ export function FuelList({
   const selectedCount = selectedIds.size;
   const allSelected =
     fuelLogs.length > 0 && selectedCount === fuelLogs.length;
+  const cumulativeDistanceByLogId = buildCumulativeDistanceByLogId(fuelLogs);
 
   function enterSelectionMode() {
     setSelectionMode(true);
@@ -459,6 +465,9 @@ export function FuelList({
           fuelLog={fuelLog}
           fuelLogs={fuelLogs}
           vehicleInitialOdometer={vehicleInitialOdometer}
+          cumulativeDistanceKm={
+            cumulativeDistanceByLogId.get(fuelLog.id) ?? fuelLog.distanceKm
+          }
           knownGasStations={knownGasStations}
           pickerGasStations={pickerGasStations}
           gasStationBrands={gasStationBrands}

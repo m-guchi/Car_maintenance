@@ -28,6 +28,62 @@ export function serializeFuelLogsForClient(
   return logs.map(serializeFuelLogForClient);
 }
 
+export function computeDistanceSinceRegistration(
+  fuelLogs: Pick<FuelLogClientRecord, "distanceKm">[],
+): number {
+  return fuelLogs.reduce((sum, log) => sum + log.distanceKm, 0);
+}
+
+function sortFuelLogsAsc(
+  fuelLogs: Pick<FuelLogClientRecord, "id" | "date" | "distanceKm">[],
+) {
+  return [...fuelLogs].sort((left, right) => {
+    const dateDiff = left.date.getTime() - right.date.getTime();
+    if (dateDiff !== 0) {
+      return dateDiff;
+    }
+
+    return left.distanceKm - right.distanceKm;
+  });
+}
+
+export function buildCumulativeDistanceByLogId(
+  fuelLogs: Pick<FuelLogClientRecord, "id" | "date" | "distanceKm">[],
+): Map<string, number> {
+  const cumulativeDistanceByLogId = new Map<string, number>();
+  let cumulativeDistanceKm = 0;
+
+  for (const fuelLog of sortFuelLogsAsc(fuelLogs)) {
+    cumulativeDistanceKm += fuelLog.distanceKm;
+    cumulativeDistanceByLogId.set(fuelLog.id, cumulativeDistanceKm);
+  }
+
+  return cumulativeDistanceByLogId;
+}
+
+export function computeTotalOdometerKm(
+  fuelLogs: Pick<FuelLogClientRecord, "odometer" | "date" | "distanceKm">[],
+  vehicleInitialOdometer: number | null | undefined,
+): number | null {
+  const sortedDesc = [...fuelLogs].sort(
+    (left, right) => right.date.getTime() - left.date.getTime(),
+  );
+
+  for (const log of sortedDesc) {
+    if (log.odometer != null) {
+      return log.odometer;
+    }
+  }
+
+  const distanceSum = computeDistanceSinceRegistration(fuelLogs);
+
+  if (vehicleInitialOdometer != null) {
+    return vehicleInitialOdometer + distanceSum;
+  }
+
+  return null;
+}
+
 export function getPreviousOdometer(
   fuelLogs: Pick<FuelLogClientRecord, "id" | "odometer">[],
   vehicleInitialOdometer: number | null | undefined,

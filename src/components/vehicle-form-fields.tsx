@@ -8,10 +8,9 @@ import {
   FUEL_TYPE_OPTIONS,
 } from "@/lib/vehicle-constants";
 
-const inputClassName =
-  "mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
+const inputClassName = "app-input";
 
-const labelClassName = "block text-sm font-medium text-slate-700";
+const labelClassName = "app-label";
 
 type VehicleFormFieldsProps = {
   vehicle?: VehicleRecord;
@@ -40,7 +39,7 @@ export function VehicleFormFields({
         />
       </div>
 
-      <fieldset className="space-y-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+      <fieldset className="space-y-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4">
         <legend className="px-1 text-sm font-medium text-blue-900">
           推奨項目
         </legend>
@@ -134,7 +133,7 @@ export function VehicleFormFields({
         </div>
       </fieldset>
 
-      <details className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+      <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <summary className="cursor-pointer text-sm font-medium text-slate-700">
           任意項目を入力する
         </summary>
@@ -243,7 +242,7 @@ export function VehicleFormFields({
         </div>
       </details>
 
-      <label className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+      <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-3">
         <input
           name="isActive"
           type="checkbox"

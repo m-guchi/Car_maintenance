@@ -71,9 +71,9 @@ export function VehicleDetails({ vehicle }: VehicleDetailsProps) {
           {details.map((item) => (
             <div
               key={item.label}
-              className="min-w-0 rounded-lg bg-slate-50 px-3 py-2.5"
+              className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
             >
-              <dt className="text-xs text-slate-500">{item.label}</dt>
+              <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
               <dd className="mt-0.5 break-words text-sm font-medium text-slate-800">
                 {item.value}
               </dd>

@@ -53,14 +53,14 @@ function VehicleEditForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="app-btn-primary px-3 py-2"
         >
           {pending ? "保存中..." : "保存"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="app-btn-secondary px-3 py-2"
         >
           キャンセル
         </button>
@@ -95,7 +95,11 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
   }
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article
+      className={`app-card border-l-4 p-5 ${
+        vehicle.isActive ? "border-l-emerald-500" : "border-l-slate-300"
+      }`}
+    >
       <VehicleDetails vehicle={vehicle} />
 
       {!editing && (
@@ -103,7 +107,7 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            className="app-btn-secondary px-3 py-1.5"
           >
             編集
           </button>
@@ -134,7 +138,7 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
 export function VehicleList({ vehicles }: VehicleListProps) {
   if (vehicles.length === 0) {
     return (
-      <section className="rounded-2xl border border-dashed border-slate-300 bg-white p-6 text-center shadow-sm">
+      <section className="app-card-muted border border-dashed border-slate-300 p-8 text-center">
         <span className="text-3xl" aria-hidden="true">
           🚗
         </span>
@@ -150,7 +154,7 @@ export function VehicleList({ vehicles }: VehicleListProps) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-base font-semibold text-slate-900">
+      <h2 className="app-section-title">
         登録済み車両（{vehicles.length}台）
       </h2>
       {vehicles.map((vehicle) => (

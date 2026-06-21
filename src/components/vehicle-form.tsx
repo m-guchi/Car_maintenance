@@ -24,8 +24,8 @@ export function VehicleForm() {
   }, [state.ok]);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-base font-semibold text-slate-900">車両を登録</h2>
+    <section className="app-card border-l-4 border-l-blue-500">
+      <h2 className="app-section-title">車両を登録</h2>
       <p className="mt-1 text-sm text-slate-500">
         車両名は必須です。車種名・型式・燃料種別・車検満了日の入力を推奨します。
       </p>
@@ -48,7 +48,7 @@ export function VehicleForm() {
         <button
           type="submit"
           disabled={pending}
-          className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-btn-primary flex w-full py-3"
         >
           {pending ? "登録中..." : "車両を登録する"}
         </button>

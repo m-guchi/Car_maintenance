@@ -25,7 +25,7 @@ export function PasskeyRegisterCard({ hasPasskey }: PasskeyRegisterCardProps) {
 
   if (hasPasskey) {
     return (
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+      <section className="app-card border border-emerald-200 bg-emerald-50/80">
         <div className="flex items-start gap-3">
           <span className="text-2xl" aria-hidden="true">
             ✅
@@ -44,7 +44,7 @@ export function PasskeyRegisterCard({ hasPasskey }: PasskeyRegisterCardProps) {
   }
 
   return (
-    <section className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+    <section className="app-card border border-blue-200 bg-blue-50/80">
       <div className="flex items-start gap-3">
         <span className="text-2xl" aria-hidden="true">
           🔐
@@ -67,7 +67,7 @@ export function PasskeyRegisterCard({ hasPasskey }: PasskeyRegisterCardProps) {
             type="button"
             onClick={handleRegister}
             disabled={loading}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            className="app-btn-primary mt-4 flex w-full gap-2 py-3 sm:w-auto"
           >
             {loading ? "登録中..." : "パスキーを登録する"}
           </button>

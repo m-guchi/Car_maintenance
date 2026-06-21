@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --header-from: #1e40af;
+  --header-to: #1d4ed8;
 }
 
 @theme inline {
@@ -12,15 +19,52 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: linear-gradient(
+    165deg,
+    #e0e7ff 0%,
+    #f1f5f9 35%,
+    #f8fafc 100%
+  );
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Hiragino Sans",
+    "Noto Sans JP",
+    sans-serif;
+  min-height: 100vh;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .app-card {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/50;
+  }
+
+  .app-card-muted {
+    @apply rounded-2xl border border-slate-200/80 bg-slate-50/80 p-6 shadow-sm;
+  }
+
+  .app-section-title {
+    @apply text-base font-semibold tracking-tight text-slate-900;
+  }
+
+  .app-btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .app-btn-secondary {
+    @apply rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50;
+  }
+
+  .app-input {
+    @apply mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100;
+  }
+
+  .app-label {
+    @apply block text-sm font-medium text-slate-700;
+  }
 }

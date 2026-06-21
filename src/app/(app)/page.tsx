@@ -23,7 +23,12 @@ export default async function HomePage() {
     <main className="flex min-h-full flex-1 flex-col">
       <AppHeader
         title="Car Maintenance"
-        subtitle={email ?? "ダッシュボード"}
+        subtitle="ダッシュボード"
+        user={{
+          name: session?.user?.name,
+          email: session?.user?.email,
+          image: session?.user?.image,
+        }}
       />
 
       <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:max-w-5xl">

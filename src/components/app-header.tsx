@@ -1,20 +1,26 @@
 import Link from "next/link";
 
 import { SidebarMenuButton } from "@/components/sidebar-menu-button";
-import { SignOutButton } from "@/components/sign-out-button";
+import { UserMenu } from "@/components/user-menu";
+
+type AppHeaderUser = {
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+};
 
 type AppHeaderProps = {
   title: string;
   subtitle?: string;
-  backHref?: string;
-  backLabel?: string;
+  showHomeLink?: boolean;
+  user?: AppHeaderUser;
 };
 
 export function AppHeader({
   title,
   subtitle,
-  backHref,
-  backLabel = "戻る",
+  showHomeLink = false,
+  user,
 }: AppHeaderProps) {
   return (
     <header className="border-b border-blue-800/20 bg-gradient-to-r from-blue-800 via-blue-700 to-blue-600 px-4 py-4 shadow-md shadow-blue-900/10 dark:border-slate-700/50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:shadow-black/20">
@@ -22,12 +28,12 @@ export function AppHeader({
         <div className="flex min-w-0 items-center">
           <SidebarMenuButton />
           <div className="min-w-0">
-            {backHref && (
+            {showHomeLink && (
               <Link
-                href={backHref}
+                href="/"
                 className="mb-1 inline-flex items-center text-sm text-blue-100 transition hover:text-white"
               >
-                ← {backLabel}
+                ← ホーム
               </Link>
             )}
             <h1 className="truncate text-lg font-bold text-white">{title}</h1>
@@ -36,7 +42,11 @@ export function AppHeader({
             )}
           </div>
         </div>
-        <SignOutButton variant="header" />
+        <UserMenu
+          name={user?.name}
+          email={user?.email}
+          image={user?.image}
+        />
       </div>
     </header>
   );

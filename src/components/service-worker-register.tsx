@@ -2,19 +2,30 @@
 
 import { useEffect } from "react";
 
+async function clearDevCaches() {
+  if (!("caches" in window)) {
+    return;
+  }
+
+  const keys = await caches.keys();
+  await Promise.all(keys.map((key) => caches.delete(key)));
+}
+
 export function ServiceWorkerRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) {
       return;
     }
 
-    // 開発中は SW を無効化（キャッシュによるリダイレクト不具合を防ぐ）
+    // 開発中は SW とキャッシュを無効化（古い UI が表示されるのを防ぐ）
     if (process.env.NODE_ENV === "development") {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister();
-        });
-      });
+      void (async () => {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+          registrations.map((registration) => registration.unregister()),
+        );
+        await clearDevCaches();
+      })();
       return;
     }
 

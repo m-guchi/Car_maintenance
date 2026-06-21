@@ -17,7 +17,7 @@ function isPublicPath(pathname: string): boolean {
 }
 
 export default auth((req) => {
-  applyAuthUrlFromRequest(req.url);
+  applyAuthUrlFromRequest(req.url, req.headers.get("host"));
 
   const { pathname } = req.nextUrl;
 

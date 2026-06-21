@@ -19,14 +19,18 @@ export const authConfig = {
     },
     jwt({ token, user }) {
       if (user) {
+        token.id = user.id;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
+      } else if (!token.id && token.sub) {
+        token.id = token.sub;
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.image = token.picture as string;

@@ -1,8 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f1f5f9;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #e2e8f0;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --surface: #1e293b;
+    --surface-muted: #172033;
+    --border: #334155;
+    --accent: #3b82f6;
+    --accent-hover: #60a5fa;
+  }
 }
 
 @theme inline {
@@ -12,15 +29,97 @@
   --font-mono: var(--font-geist-mono);
 }
 
+body {
+  background: linear-gradient(
+    165deg,
+    #e0e7ff 0%,
+    #f1f5f9 35%,
+    #f8fafc 100%
+  );
+  background-attachment: fixed;
+  color: var(--foreground);
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Hiragino Sans",
+    "Noto Sans JP",
+    sans-serif;
+  min-height: 100vh;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background: linear-gradient(
+      165deg,
+      #0f172a 0%,
+      #1e293b 40%,
+      #0f172a 100%
+    );
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .app-card {
+    @apply rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm shadow-slate-200/50 dark:border-slate-700/80 dark:bg-slate-800 dark:shadow-slate-950/50;
+  }
+
+  .app-card-muted {
+    @apply rounded-2xl border border-slate-200/80 bg-slate-50/80 p-6 shadow-sm dark:border-slate-700/80 dark:bg-slate-800/60;
+  }
+
+  .app-section-title {
+    @apply text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100;
+  }
+
+  .app-btn-primary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:shadow-blue-900/30 dark:hover:bg-blue-400;
+  }
+
+  .app-btn-secondary {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-600;
+  }
+
+  .app-btn-danger {
+    @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-100 active:scale-[0.98] disabled:opacity-60 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-900/50;
+  }
+
+  .app-btn-icon {
+    @apply inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition active:scale-[0.97];
+  }
+
+  .app-input {
+    @apply mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/50;
+  }
+
+  .app-label {
+    @apply block text-sm font-medium text-slate-700 dark:text-slate-300;
+  }
+
+  .app-alert-error {
+    @apply rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300;
+  }
+
+  .app-alert-success {
+    @apply rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300;
+  }
+
+  .app-text-muted {
+    @apply text-slate-600 dark:text-slate-400;
+  }
+
+  .app-text-subtle {
+    @apply text-slate-500 dark:text-slate-400;
+  }
+
+  .app-detail-cell {
+    @apply min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-slate-600 dark:bg-slate-700/50;
+  }
+
+  .app-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

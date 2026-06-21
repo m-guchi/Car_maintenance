@@ -3,19 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { navItems } from "@/lib/nav-items";
+import { isNavActive, navItems } from "@/lib/nav-items";
 
 type AppSidebarProps = {
   open: boolean;
   onClose: () => void;
 };
-
-function isActive(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export function AppSidebar({ open, onClose }: AppSidebarProps) {
   const pathname = usePathname();
@@ -46,7 +39,7 @@ export function AppSidebar({ open, onClose }: AppSidebarProps) {
         <nav className="flex-1 overflow-y-auto p-3">
           <ul className="space-y-1">
             {navItems.map((item) => {
-              const active = item.href ? isActive(pathname, item.href) : false;
+              const active = item.href ? isNavActive(pathname, item.href) : false;
               const disabled = !item.href;
 
               const content = (

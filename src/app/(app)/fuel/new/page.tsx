@@ -3,17 +3,19 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
-import { FuelDashboard } from "@/components/fuel-dashboard";
-import { FuelList } from "@/components/fuel-list";
+import { FuelForm } from "@/components/fuel-form";
 import {
-  getFuelDashboardForVehicle,
   listFuelLogsForVehicle,
 } from "@/lib/fuel-logs";
-import { serializeFuelLogsForClient } from "@/lib/fuel-types";
+import {
+  getPreviousOdometer,
+  buildKnownGasStationsFromLogs,
+  serializeFuelLogsForClient,
+} from "@/lib/fuel-types";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { getActiveVehicle } from "@/lib/vehicles";
 
-export default async function FuelPage() {
+export default async function FuelNewPage() {
   const session = await auth();
   const userId = session?.user?.id;
   const activeVehicle = userId ? await getActiveVehicle(userId) : null;
@@ -28,21 +30,26 @@ export default async function FuelPage() {
 
   const clientFuelLogs = fuelLogs ? serializeFuelLogsForClient(fuelLogs) : null;
 
-  const dashboardStats =
-    userId && activeVehicle
-      ? await getFuelDashboardForVehicle(userId, activeVehicle.id)
-      : null;
+  const previousOdometer =
+    clientFuelLogs && activeVehicle
+      ? getPreviousOdometer(clientFuelLogs, activeVehicle.initialOdometer)
+      : (activeVehicle?.initialOdometer ?? null);
+
+  const knownGasStations = clientFuelLogs
+    ? buildKnownGasStationsFromLogs(clientFuelLogs)
+    : [];
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <AppHeader
-        title="給油情報"
+        title="給油を記録"
         subtitle={
           activeVehicle
             ? `${activeVehicle.name}${vehicleSubtitle ? `（${vehicleSubtitle}）` : ""}`
             : undefined
         }
-        showHomeLink
+        backHref="/fuel"
+        backLabel="給油情報に戻る"
         user={{
           name: session?.user?.name,
           email: session?.user?.email,
@@ -67,27 +74,11 @@ export default async function FuelPage() {
             </Link>
           </section>
         ) : (
-          <>
-            <div className="flex">
-              <Link
-                href="/fuel/new"
-                className="app-btn-primary w-full bg-amber-600 shadow-amber-600/20 hover:bg-amber-700 sm:ml-auto sm:w-auto dark:bg-amber-500 dark:hover:bg-amber-400"
-              >
-                給油を記録する
-              </Link>
-            </div>
-
-            {dashboardStats && dashboardStats.logCount > 0 && (
-              <FuelDashboard stats={dashboardStats} />
-            )}
-
-            {clientFuelLogs && (
-              <FuelList
-                fuelLogs={clientFuelLogs}
-                vehicleInitialOdometer={activeVehicle.initialOdometer}
-              />
-            )}
-          </>
+          <FuelForm
+            vehicleId={activeVehicle.id}
+            previousOdometer={previousOdometer}
+            knownGasStations={knownGasStations}
+          />
         )}
       </AppPage>
     </main>

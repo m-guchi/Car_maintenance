@@ -17,6 +17,8 @@ export type MonthlyFuelCost = {
   totalCost: number;
 };
 
+export const MONTHLY_FUEL_COST_INITIAL_VISIBLE = 6;
+
 export type PriceTrendPoint = {
   date: Date;
   pricePerLiter: number;
@@ -115,8 +117,7 @@ export function computeMonthlyCosts(logs: FuelLogLike[]): MonthlyFuelCost[] {
   }
 
   return [...totals.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .slice(-6)
+    .sort(([left], [right]) => right.localeCompare(left))
     .map(([monthKey, totalCost]) => {
       const [year, month] = monthKey.split("-");
       const label = new Intl.DateTimeFormat("ja-JP", {

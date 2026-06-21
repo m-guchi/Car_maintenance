@@ -6,7 +6,9 @@ import {
 import type { FuelDashboardStats } from "@/lib/fuel-stats";
 import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
 
+import { BarChart } from "@/components/bar-chart";
 import { FuelPriceTrendChart } from "@/components/fuel-price-trend-chart";
+import { MonthlyFuelCostChart } from "@/components/monthly-fuel-cost-chart";
 
 type FuelMileageSummaryProps = {
   totalOdometerKm: number | null;
@@ -50,65 +52,7 @@ type FuelDashboardProps = {
   stats: FuelDashboardStats;
 };
 
-function BarChart({
-  items,
-  valueKey,
-  labelKey,
-  formatValue,
-  colorClassName,
-}: {
-  items: Array<Record<string, string | number>>;
-  valueKey: string;
-  labelKey: string;
-  formatValue: (value: number) => string;
-  colorClassName: string;
-}) {
-  if (items.length === 0) {
-    return (
-      <p className="text-sm text-slate-500">表示するデータがありません</p>
-    );
-  }
-
-  const maxValue = Math.max(
-    ...items.map((item) => Number(item[valueKey])),
-    1,
-  );
-
-  return (
-    <div className="space-y-3">
-      {items.map((item) => {
-        const value = Number(item[valueKey]);
-        const widthPercent = Math.max((value / maxValue) * 100, 4);
-
-        return (
-          <div key={String(item[labelKey])}>
-            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-              <span className="truncate text-slate-600 dark:text-slate-400">
-                {item[labelKey]}
-              </span>
-              <span className="shrink-0 font-medium text-slate-800 dark:text-slate-200">
-                {formatValue(value)}
-              </span>
-            </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
-              <div
-                className={`h-full rounded-full ${colorClassName}`}
-                style={{ width: `${widthPercent}%` }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function FuelDashboard({ stats }: FuelDashboardProps) {
-  const monthlyChartItems = stats.monthlyCosts.map((item) => ({
-    label: item.label,
-    totalCost: item.totalCost,
-  }));
-
   const efficiencyChartItems = stats.efficiencyHistory.map((item) => ({
     label: formatDateJa(item.date),
     kmPerLiter: item.kmPerLiter,
@@ -162,13 +106,7 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
             月別給油費
           </h3>
           <div className="mt-4">
-            <BarChart
-              items={monthlyChartItems}
-              valueKey="totalCost"
-              labelKey="label"
-              formatValue={(value) => formatCurrency(value)}
-              colorClassName="bg-amber-500"
-            />
+            <MonthlyFuelCostChart items={stats.monthlyCosts} />
           </div>
         </div>
 

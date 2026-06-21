@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import {
   OTHER_GAS_STATION_BRAND_NAME,
   validateGasStationBrandName,
-  type GasStationBrandRecord,
 } from "@/lib/gas-station-brand-types";
 import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
 import {

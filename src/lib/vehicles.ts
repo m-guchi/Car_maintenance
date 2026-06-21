@@ -47,6 +47,12 @@ export async function getVehicleForUser(userId: string, vehicleId: string) {
   });
 }
 
+export async function getActiveVehicle(userId: string) {
+  return prisma.vehicle.findFirst({
+    where: { userId, isActive: true },
+  });
+}
+
 export async function createVehicle(userId: string, input: VehicleInput) {
   return prisma.$transaction(async (tx) => {
     if (input.isActive) {

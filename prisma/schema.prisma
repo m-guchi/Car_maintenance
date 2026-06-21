@@ -162,7 +162,8 @@ model FuelLog {
   id               String   @id @default(cuid())
   vehicleId        String   @map("vehicle_id")
   date             DateTime
-  odometer         Int
+  distanceKm       Decimal  @map("distance_km") @db.Decimal(10, 2)
+  odometer         Int?     @map("odometer")
   fuelAmount       Decimal  @map("fuel_amount") @db.Decimal(10, 2)
   pricePerLiter    Int      @map("price_per_liter")
   totalCost        Int      @map("total_cost")

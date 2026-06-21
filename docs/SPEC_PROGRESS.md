@@ -15,10 +15,10 @@
 
 ## 全体進捗
 
-**約 45%** — 認証・DB スキーマ・車両管理は完了。給油・メンテ UI と本番デプロイは未了。
+**約 55%** — 認証・DB スキーマ・車両管理・給油記録は完了。メンテ UI と本番デプロイは未了。
 
 ```
-[██████████████████░░░░░░░░░░░░] 45%
+[██████████████████████░░░░░░░░] 55%
 ```
 
 | レイヤー | 状態 |
@@ -27,7 +27,8 @@
 | DB スキーマ（Prisma） | ✅ |
 | 1Password 開発環境 | ✅ |
 | PWA 雛形 | ⚠️ |
-| 給油・メンテ・車両 UI | ⚠️ |
+| 給油 UI | ✅ |
+| メンテ・車両 UI | ⚠️ |
 | 本番 VPS / CI/CD 運用 | ❌ |
 
 ---
@@ -61,7 +62,7 @@
 | `vehicles` | ✅ | ✅ | ✅ CRUD (`/vehicles`) |
 | `maintenance_categories` | ✅ | ✅ | ❌ |
 | `maintenance_logs` | ✅ | ✅ | ❌ |
-| `fuel_logs` | ✅ | ✅ | ❌ |
+| `fuel_logs` | ✅ | ✅ | ✅ CRUD + ダッシュボード (`/fuel`) |
 
 ---
 
@@ -82,11 +83,9 @@
 
 | 要件 | 状態 |
 |------|------|
-| 給油入力フォーム | ❌ |
-| ダッシュボード（燃費・月別費用・価格推移グラフ） | ❌ |
-| 周辺ガソリンスタンド検索（Geolocation） | ❌ |
-
-現状: `src/app/page.tsx` に「準備中」プレースホルダのみ。
+| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除 |
+| ダッシュボード（燃費・月別費用・価格推移グラフ） | ✅ | `fuel-dashboard.tsx` |
+| 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-search.tsx`, `/api/gas-stations` |
 
 ### ③ メンテナンス記録 & カテゴリ動的管理
 
@@ -167,6 +166,7 @@
 ```
 認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/lib/passkey.ts
 車両:     src/app/vehicles/, src/components/vehicle-form.tsx, src/components/vehicle-list.tsx, src/lib/vehicles.ts
+給油:     src/app/(app)/fuel/, src/components/fuel-*.tsx, src/lib/fuel-*.ts, src/app/api/gas-stations/route.ts
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/setup-db.sh
@@ -189,7 +189,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 ## 次の推奨タスク（優先順）
 
-1. **給油記録** → **メンテ記録 + カテゴリ管理**
+1. **メンテ記録 + カテゴリ管理**
 2. **本番デプロイ**（GitHub Secrets, VPS, `main` マージ）
 
 ---
@@ -198,6 +198,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | 給油記録（入力・一覧・燃費ダッシュボード・周辺スタンド検索 `/fuel`） |
 | 2026-06-21 | 車両詳細項目追加（車種名・型式・燃料種別・車検満了日・任意項目） |
 | 2026-06-21 | 車両 CRUD（登録・一覧・編集・削除、`/vehicles`） |
 | 2026-06-21 | Passkey 初回登録導線・顔認証ログイン実装 |

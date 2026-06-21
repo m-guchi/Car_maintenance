@@ -10,6 +10,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Load secrets from 1Password
+        uses: 1password/load-secrets-action@v4
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          OP_ENV_FILE: .github/deploy.env.tpl
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -23,3 +34,13 @@ jobs:
             npx prisma migrate deploy
             npm run build
             pm2 reload ecosystem.config.js --env production
+
+      - name: Notify Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ env.DISCORD_CI_WEBHOOK_URL }}
+          NOTIFY_APP: Car Maintenance
+          NOTIFY_KIND: デプロイ
+          NOTIFY_STATUS: ${{ job.status }}
+          NOTIFY_JOB: deploy
+        run: bash .github/scripts/discord-notify.sh

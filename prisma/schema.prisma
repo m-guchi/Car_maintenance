@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- NextAuth.js / Auth.js ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+
+  accounts              Account[]
+  sessions              Session[]
+  authenticators        Authenticator[]
+  vehicles              Vehicle[]
+  maintenanceCategories MaintenanceCategory[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Authenticator {
+  credentialID         String  @map("credential_id")
+  userId               String  @map("user_id")
+  providerAccountId    String  @map("provider_account_id")
+  credentialPublicKey  String  @map("credential_public_key") @db.Text
+  counter              BigInt
+  credentialDeviceType String  @map("credential_device_type")
+  credentialBackedUp   Boolean @map("credential_backed_up")
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+  @@map("authenticators")
+}
+
+// --- Application ---
+
+model Vehicle {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  name         String
+  manufacturer String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maintenanceLogs MaintenanceLog[]
+  fuelLogs        FuelLog[]
+
+  @@map("vehicles")
+}
+
+model MaintenanceCategory {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  name         String
+  displayOrder Int      @default(0) @map("display_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maintenanceLogs MaintenanceLog[]
+
+  @@map("maintenance_categories")
+}
+
+model MaintenanceLog {
+  id         String   @id @default(cuid())
+  vehicleId  String   @map("vehicle_id")
+  categoryId String   @map("category_id")
+  date       DateTime
+  odometer   Int
+  cost       Int
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  vehicle  Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  category MaintenanceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_logs")
+}
+
+model FuelLog {
+  id               String   @id @default(cuid())
+  vehicleId        String   @map("vehicle_id")
+  date             DateTime
+  odometer         Int
+  fuelAmount       Decimal  @map("fuel_amount") @db.Decimal(10, 2)
+  pricePerLiter    Int      @map("price_per_liter")
+  totalCost        Int      @map("total_cost")
+  isFull           Boolean  @default(false) @map("is_full")
+  gasStationName   String?  @map("gas_station_name")
+  gasStationBrands String?  @map("gas_station_brands")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@map("fuel_logs")
+}

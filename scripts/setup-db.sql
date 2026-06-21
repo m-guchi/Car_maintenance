@@ -1,0 +1,7 @@
+-- このファイルは非推奨です。
+-- DB セットアップは 1Password 連携スクリプトを使用してください:
+--
+--   op signin
+--   npm run db:setup    # DB / ユーザー作成（1Password から DB_* を取得）
+--   npm run db:migrate  # テーブル作成
+--   npm run db:check    # 接続確認

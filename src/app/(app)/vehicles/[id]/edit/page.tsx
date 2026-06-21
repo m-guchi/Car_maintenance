@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AppHeader } from "@/components/app-header";
+import { AppPage } from "@/components/app-page";
 import { VehicleEditForm } from "@/components/vehicle-edit-form";
 import { getVehicleForSession } from "@/lib/vehicle-page";
 
@@ -26,7 +27,7 @@ export default async function VehicleEditPage({ params }: VehicleEditPageProps) 
         }}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:max-w-5xl">
+      <AppPage className="space-y-6">
         <section className="app-card border-l-4 border-l-blue-500">
           <h2 className="app-section-title">車両情報を編集</h2>
           <p className="mt-1 text-sm app-text-subtle">
@@ -44,7 +45,7 @@ export default async function VehicleEditPage({ params }: VehicleEditPageProps) 
         >
           キャンセル
         </Link>
-      </div>
+      </AppPage>
     </main>
   );
 }

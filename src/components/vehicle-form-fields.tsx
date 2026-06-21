@@ -189,6 +189,7 @@ export function VehicleFormFields({
                 id={`${idPrefix}-initial-odometer`}
                 name="initialOdometer"
                 type="number"
+                inputMode="numeric"
                 min={0}
                 max={9999999}
                 step={1}
@@ -211,6 +212,7 @@ export function VehicleFormFields({
                 id={`${idPrefix}-displacement`}
                 name="displacement"
                 type="number"
+                inputMode="numeric"
                 min={1}
                 max={99999}
                 step={1}

@@ -46,7 +46,7 @@
 | メール制限 (`ALLOWED_EMAIL`) | ✅ | `src/auth.config.ts` |
 | WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + Google ログイン後の登録導線 (`passkey-register-card.tsx`) |
 | Discord Webhook（signup / login 2系統） | ✅ | `src/lib/discord.ts`, `src/auth.ts` events |
-| PWA | ⚠️ | `public/manifest.json`, `public/sw.js`, `public/icons/` |
+| PWA | ⚠️ | `public/manifest.json`, `public/sw.js`, `public/icons/`, `app-bottom-nav.tsx`, `app-page.tsx` |
 | pm2 | ✅ | `ecosystem.config.js`（本番 PORT 3104 既定） |
 | GitHub Actions → VPS SSH デプロイ | ⚠️ | `.github/workflows/deploy.yml`（**1Password・VPS 初回設定後に検証**） |
 
@@ -108,7 +108,7 @@
 |------|------|------|
 | `manifest.json`（standalone, theme） | ✅ | `public/manifest.json` |
 | Service Worker | ⚠️ | `public/sw.js`。**開発中は登録しない** (`service-worker-register.tsx`) |
-| モバイルファースト UI | ⚠️ | ログイン・ホームのみ。アプリ全体は未整備 |
+| モバイルファースト UI | ✅ | `app-bottom-nav.tsx`, `app-page.tsx`, `globals.css`（44px タップ・safe-area）, 全 `(app)` ページ |
 
 ---
 
@@ -173,7 +173,7 @@
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/setup-db.sh
-PWA:      public/manifest.json, public/sw.js
+PWA:      public/manifest.json, public/sw.js, src/components/app-bottom-nav.tsx, src/components/app-page.tsx
 DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/release.yml, .github/deploy.env.tpl, scripts/construct-database-url.sh, scripts/vps-bootstrap.sh
 進捗正本: docs/SPEC_PROGRESS.md  ← このファイル
 ```
@@ -201,6 +201,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | モバイルファースト UI（ボトムナビ・AppPage・safe-area・44px タップ領域・inputMode） |
 | 2026-06-21 | Git tag / GitHub Release workflow 追加（Portfolio 同様、`release.yml` 含む） |
 | 2026-06-21 | GitHub Actions デプロイ環境（build/deploy workflow、1Password 参照、VPS bootstrap） |
 | 2026-06-21 | 給油記録（入力・一覧・燃費ダッシュボード・周辺スタンド検索 `/fuel`） |

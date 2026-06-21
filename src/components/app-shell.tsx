@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useState } from "react";
 
+import { AppBottomNav } from "@/components/app-bottom-nav";
 import { AppSidebar } from "@/components/app-sidebar";
 
 type SidebarContextValue = {
@@ -34,6 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-full">
         <AppSidebar open={sidebarOpen} onClose={closeSidebar} />
         <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <AppBottomNav />
       </div>
     </SidebarContext.Provider>
   );

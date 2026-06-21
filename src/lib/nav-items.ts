@@ -89,20 +89,10 @@ export function isNavActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** モバイル下部ナビ（ホーム・給油・メンテナンス） */
+/** モバイル下部ナビ（ホーム・給油記録・給油情報・メンテナンス） */
 export const bottomNavItems: NavItem[] = [
   { title: "ホーム", href: "/", emoji: "🏠" },
-  { title: "給油", href: "/fuel", emoji: "⛽" },
+  { title: "給油を記録", href: "/fuel/new", emoji: "⛽" },
+  { title: "給油情報", href: "/fuel", emoji: "📊" },
   { title: "メンテナンス", href: "/maintenance", emoji: "🔧" },
 ];
-
-/** ボトムナビ用アクティブ判定（給油は記録画面も含む） */
-export function isBottomNavActive(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
-  }
-  if (href === "/fuel") {
-    return pathname === "/fuel" || pathname.startsWith("/fuel/");
-  }
-  return pathname === href || pathname.startsWith(`${href}/`);
-}

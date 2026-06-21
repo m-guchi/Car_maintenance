@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { AppHeader } from "@/components/app-header";
+import { AppPage } from "@/components/app-page";
 import { VehicleDetails } from "@/components/vehicle-details";
 import { getVehicleForSession } from "@/lib/vehicle-page";
 
@@ -28,7 +29,7 @@ export default async function VehicleDetailPage({
         }}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:max-w-5xl">
+      <AppPage className="space-y-6">
         <section
           className={`app-card border-l-4 p-6 ${
             vehicle.isActive
@@ -53,7 +54,7 @@ export default async function VehicleDetailPage({
             削除
           </Link>
         </div>
-      </div>
+      </AppPage>
     </main>
   );
 }

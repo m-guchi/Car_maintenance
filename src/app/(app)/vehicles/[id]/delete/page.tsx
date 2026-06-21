@@ -1,4 +1,5 @@
 import { AppHeader } from "@/components/app-header";
+import { AppPage } from "@/components/app-page";
 import { VehicleDeleteForm } from "@/components/vehicle-delete-form";
 import { VehicleDetails } from "@/components/vehicle-details";
 import { getVehicleForSession } from "@/lib/vehicle-page";
@@ -27,7 +28,7 @@ export default async function VehicleDeletePage({
         }}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:max-w-5xl">
+      <AppPage>
         <section className="app-card border-l-4 border-l-red-500">
           <div className="flex items-start gap-3">
             <span className="text-2xl" aria-hidden="true">
@@ -54,7 +55,7 @@ export default async function VehicleDeletePage({
             cancelHref={`/vehicles/${vehicle.id}`}
           />
         </section>
-      </div>
+      </AppPage>
     </main>
   );
 }

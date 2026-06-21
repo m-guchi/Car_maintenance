@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
+import { AppPage } from "@/components/app-page";
 import { VehicleForm } from "@/components/vehicle-form";
 import { VehicleList } from "@/components/vehicle-list";
 import { listVehicles } from "@/lib/vehicles";
@@ -22,10 +23,10 @@ export default async function VehiclesPage() {
         }}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 space-y-6 px-4 py-8 sm:px-6 lg:max-w-5xl">
+      <AppPage className="space-y-6">
         <VehicleForm />
         <VehicleList vehicles={vehicles} />
-      </div>
+      </AppPage>
     </main>
   );
 }

@@ -9,7 +9,7 @@ export function SidebarMenuButton() {
     <button
       type="button"
       aria-label="メニューを開く"
-      className="mr-2 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/25 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20 lg:hidden"
+      className="app-btn-icon mr-2 border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 lg:hidden"
       onClick={sidebar.openSidebar}
     >
       <svg

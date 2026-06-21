@@ -85,7 +85,7 @@ export function UserMenu({ name, email, image }: UserMenuProps) {
         aria-label="アカウントメニューを開く"
         aria-expanded={open}
         aria-controls={menuId}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/25 bg-white/10 text-white backdrop-blur-sm transition hover:bg-white/20"
+        className="app-btn-icon border border-white/25 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20"
         onClick={() => setOpen((current) => !current)}
       >
         <svg

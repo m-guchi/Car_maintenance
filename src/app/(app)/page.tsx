@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
+import { AppPage } from "@/components/app-page";
 import { PasskeyRegisterCard } from "@/components/passkey-register-card";
 import { menuItems } from "@/lib/nav-items";
 import { hasRegisteredPasskeys } from "@/lib/passkey";
@@ -31,7 +32,7 @@ export default async function HomePage() {
         }}
       />
 
-      <div className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6 lg:max-w-5xl">
+      <AppPage>
         {email && (
           <div className="mb-6">
             <PasskeyRegisterCard hasPasskey={hasPasskey} />
@@ -118,7 +119,7 @@ export default async function HomePage() {
             );
           })}
         </div>
-      </div>
+      </AppPage>
     </main>
   );
 }

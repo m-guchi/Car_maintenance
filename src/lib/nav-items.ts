@@ -52,7 +52,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     title: "設定",
-    desc: "ブランド・パスキー管理",
+    desc: "ブランド・登録店舗・パスキー",
     emoji: "⚙️",
     href: "/settings",
     ready: true,

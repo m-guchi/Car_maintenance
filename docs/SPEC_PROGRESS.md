@@ -63,6 +63,8 @@
 | `maintenance_categories` | ✅ | ✅ | ❌ |
 | `maintenance_logs` | ✅ | ✅ | ❌ |
 | `fuel_logs` | ✅ | ✅ | ✅ CRUD + ダッシュボード (`/fuel`) |
+| `gas_station_brands` | ✅ | ✅ | ✅ 設定画面 CRUD |
+| `registered_gas_stations` | ✅ | ✅ `20250621260000` | ✅ 設定画面 CRUD・給油フォーム連携 |
 
 ---
 
@@ -83,7 +85,8 @@
 
 | 要件 | 状態 |
 |------|------|
-| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除 |
+| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択 |
+| 登録店舗管理（設定画面） | ✅ | `registered-gas-station-settings.tsx`, `registered_gas_stations` テーブル |
 | ダッシュボード（燃費・月別費用・価格推移グラフ） | ✅ | `fuel-dashboard.tsx` |
 | 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-search.tsx`, `/api/gas-stations` |
 
@@ -208,6 +211,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | 設定画面に登録店舗管理（編集・削除・登録画面への非表示、`registered_gas_stations`） |
+| 2026-06-21 | 給油フォームに登録済み店舗クイック選択（`registered-gas-station-picker.tsx`） |
 | 2026-06-21 | 給油記録のまとめて削除（選択モード・`deleteFuelLogsAction`） |
 | 2026-06-21 | 削除確認をアプリ内 UI に統一（`delete-confirm-panel.tsx`、給油・ブランド設定） |
 | 2026-06-21 | 開発環境から本番 DB 確認（`db:*:prod`、SSH トンネル、`DB_TARGET=production`） |

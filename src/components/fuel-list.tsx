@@ -21,12 +21,15 @@ import {
 } from "@/lib/fuel-display";
 import { computeFuelEfficiencyForLog } from "@/lib/fuel-stats";
 import type { GasStationBrandRecord } from "@/lib/gas-station-brand-types";
-import { getPreviousOdometer, buildKnownGasStationsFromLogs, type FuelLogClientRecord } from "@/lib/fuel-types";
+import type { KnownGasStation } from "@/lib/gas-stations";
+import { getPreviousOdometer, type FuelLogClientRecord } from "@/lib/fuel-types";
 import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
 
 type FuelListProps = {
   fuelLogs: FuelLogClientRecord[];
   vehicleInitialOdometer?: number | null;
+  knownGasStations: KnownGasStation[];
+  pickerGasStations: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
 };
 
@@ -42,13 +45,15 @@ function FuelEditForm({
   vehicleInitialOdometer,
   onCancel,
   knownGasStations,
+  pickerGasStations,
   gasStationBrands,
 }: {
   fuelLog: FuelLogClientRecord;
   fuelLogs: FuelLogClientRecord[];
   vehicleInitialOdometer?: number | null;
   onCancel: () => void;
-  knownGasStations: ReturnType<typeof buildKnownGasStationsFromLogs>;
+  knownGasStations: KnownGasStation[];
+  pickerGasStations: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
 }) {
   const boundAction = updateFuelLogAction.bind(null, fuelLog.id);
@@ -77,6 +82,7 @@ function FuelEditForm({
           fuelLog.id,
         )}
         knownGasStations={knownGasStations}
+        pickerGasStations={pickerGasStations}
         gasStationBrands={gasStationBrands}
       />
 
@@ -107,6 +113,7 @@ function FuelLogCard({
   fuelLogs,
   vehicleInitialOdometer,
   knownGasStations,
+  pickerGasStations,
   gasStationBrands,
   selectionMode,
   selected,
@@ -115,7 +122,8 @@ function FuelLogCard({
   fuelLog: FuelLogClientRecord;
   fuelLogs: FuelLogClientRecord[];
   vehicleInitialOdometer?: number | null;
-  knownGasStations: ReturnType<typeof buildKnownGasStationsFromLogs>;
+  knownGasStations: KnownGasStation[];
+  pickerGasStations: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
   selectionMode: boolean;
   selected: boolean;
@@ -261,6 +269,7 @@ function FuelLogCard({
           fuelLogs={fuelLogs}
           vehicleInitialOdometer={vehicleInitialOdometer}
           knownGasStations={knownGasStations}
+          pickerGasStations={pickerGasStations}
           gasStationBrands={gasStationBrands}
           onCancel={() => setEditing(false)}
         />
@@ -272,9 +281,10 @@ function FuelLogCard({
 export function FuelList({
   fuelLogs,
   vehicleInitialOdometer = null,
+  knownGasStations,
+  pickerGasStations,
   gasStationBrands,
 }: FuelListProps) {
-  const knownGasStations = buildKnownGasStationsFromLogs(fuelLogs);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -442,6 +452,7 @@ export function FuelList({
           fuelLogs={fuelLogs}
           vehicleInitialOdometer={vehicleInitialOdometer}
           knownGasStations={knownGasStations}
+          pickerGasStations={pickerGasStations}
           gasStationBrands={gasStationBrands}
           selectionMode={selectionMode}
           selected={selectedIds.has(fuelLog.id)}

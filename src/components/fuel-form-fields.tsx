@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { GasStationMapPicker } from "@/components/gas-station-map-picker";
+import { RegisteredGasStationPicker } from "@/components/registered-gas-station-picker";
 import {
   MAX_CUSTOM_GAS_STATION_BRAND_LENGTH,
   MAX_GAS_STATION_STORE_NAME_LENGTH,
@@ -13,8 +14,10 @@ import {
   type GasStationBrandRecord,
 } from "@/lib/gas-station-brand-types";
 import {
+  buildSelectionFromKnownStation,
   composeGasStationRegistrationName,
   extractStoreNamePart,
+  getStationSelectionKey,
   resolveBrandFormState,
   type KnownGasStation,
 } from "@/lib/gas-stations";
@@ -35,8 +38,28 @@ type FuelFormFieldsProps = {
   idPrefix?: string;
   previousOdometer?: number | null;
   knownGasStations?: KnownGasStation[];
+  pickerGasStations?: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
 };
+
+function getInitialSelectionKey(
+  fuelLog: FuelLogClientRecord | undefined,
+  knownGasStations: KnownGasStation[],
+): string | null {
+  if (fuelLog?.gasStationOsmId) {
+    return fuelLog.gasStationOsmId;
+  }
+
+  if (!fuelLog?.gasStationName) {
+    return null;
+  }
+
+  const match = knownGasStations.find(
+    (station) => station.registeredName === fuelLog.gasStationName,
+  );
+
+  return match ? getStationSelectionKey(match) : null;
+}
 
 function calculateTotalCost(fuelAmount: string, pricePerLiter: string): string {
   const amount = Number.parseFloat(fuelAmount);
@@ -73,6 +96,7 @@ export function FuelFormFields({
   idPrefix = "fuel",
   previousOdometer = null,
   knownGasStations = [],
+  pickerGasStations,
   gasStationBrands,
 }: FuelFormFieldsProps) {
   const initialOdometerState = getInitialOdometerState(fuelLog, previousOdometer);
@@ -114,7 +138,11 @@ export function FuelFormFields({
   const [selectedStationId, setSelectedStationId] = useState<string | null>(
     fuelLog?.gasStationOsmId ?? null,
   );
+  const [selectedStationKey, setSelectedStationKey] = useState<string | null>(
+    () => getInitialSelectionKey(fuelLog, knownGasStations),
+  );
   const [mapStationName, setMapStationName] = useState("");
+  const visiblePickerStations = pickerGasStations ?? knownGasStations;
 
   const effectiveBrand =
     brandSelect === OTHER_GAS_STATION_BRAND_NAME
@@ -158,13 +186,27 @@ export function FuelFormFields({
       storeName: string;
       registrationName: string;
     }) => {
-      setSelectedStationId(station.id);
+      setSelectedStationId(station.id || null);
+      setSelectedStationKey(station.id || station.registrationName);
       setMapStationName(station.mapName);
       setBrandSelect(station.brandSelect);
       setCustomBrand(station.customBrand);
       setStoreName(station.storeName);
     },
     [],
+  );
+
+  const handleSelectRegisteredStation = useCallback(
+    (station: KnownGasStation) => {
+      const selection = buildSelectionFromKnownStation(station, gasStationBrands);
+      setSelectedStationId(selection.id || null);
+      setSelectedStationKey(getStationSelectionKey(station));
+      setMapStationName("");
+      setBrandSelect(selection.brandSelect);
+      setCustomBrand(selection.customBrand);
+      setStoreName(selection.storeName);
+    },
+    [gasStationBrands],
   );
 
   function handleBrandSelectChange(value: string) {
@@ -342,13 +384,19 @@ export function FuelFormFields({
             スタンド情報 <span className="text-red-500">*</span>
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            地図から店舗を選び、登録する店舗名を確認・編集してください。ブランドは
+            登録済み店舗から選ぶか、地図から店舗を選び、登録する店舗名を確認・編集してください。ブランドは
             <Link href="/settings" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
               設定
             </Link>
             で管理できます。
           </p>
         </div>
+
+        <RegisteredGasStationPicker
+          knownStations={visiblePickerStations}
+          selectedStationKey={selectedStationKey}
+          onSelectStation={handleSelectRegisteredStation}
+        />
 
         <GasStationMapPicker
           selectedStationId={selectedStationId}

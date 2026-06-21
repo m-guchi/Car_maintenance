@@ -26,6 +26,7 @@ import {
   updateFuelLog,
   type FuelLogInput,
 } from "@/lib/fuel-logs";
+import { upsertRegisteredGasStationFromFuelLog } from "@/lib/registered-gas-stations";
 import { getVehicleForUser } from "@/lib/vehicles";
 
 export type FuelActionState = {
@@ -325,8 +326,15 @@ export async function createFuelLogAction(
       return { ok: false, error: "給油記録の登録に失敗しました" };
     }
 
+    await upsertRegisteredGasStationFromFuelLog(userId, {
+      registeredName: parsed.data.gasStationName,
+      brand: parsed.data.gasStationBrands,
+      osmId: parsed.data.gasStationOsmId,
+    });
+
     revalidatePath("/fuel");
     revalidatePath("/fuel/new");
+    revalidatePath("/settings");
     revalidatePath("/");
 
     return { ok: true, resetToken: Date.now() };
@@ -354,8 +362,15 @@ export async function updateFuelLogAction(
       return { ok: false, error: "給油記録が見つかりません" };
     }
 
+    await upsertRegisteredGasStationFromFuelLog(userId, {
+      registeredName: parsed.data.gasStationName,
+      brand: parsed.data.gasStationBrands,
+      osmId: parsed.data.gasStationOsmId,
+    });
+
     revalidatePath("/fuel");
     revalidatePath("/fuel/new");
+    revalidatePath("/settings");
     revalidatePath("/");
 
     return { ok: true, resetToken: Date.now() };

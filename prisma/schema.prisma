@@ -22,6 +22,7 @@ model User {
   vehicles              Vehicle[]
   maintenanceCategories MaintenanceCategory[]
   gasStationBrands      GasStationBrand[]
+  registeredGasStations RegisteredGasStation[]
 
   @@map("users")
 }
@@ -156,6 +157,25 @@ model GasStationBrand {
   @@unique([userId, name])
   @@index([userId, displayOrder])
   @@map("gas_station_brands")
+}
+
+model RegisteredGasStation {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  osmId            String?  @map("osm_id")
+  registeredName   String   @map("registered_name")
+  brand            String?
+  hiddenFromPicker Boolean  @default(false) @map("hidden_from_picker")
+  displayOrder     Int      @default(0) @map("display_order")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, osmId])
+  @@unique([userId, registeredName])
+  @@index([userId, displayOrder])
+  @@map("registered_gas_stations")
 }
 
 model MaintenanceLog {

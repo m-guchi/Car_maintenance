@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { Map as LeafletMap, Marker as LeafletMarker, TileLayer } from "leaflet";
 
 import "leaflet/dist/leaflet.css";
 
@@ -123,7 +123,29 @@ function createSearchCenterIcon() {
 type LoadPhase = "pending" | "loading" | "error" | "ready";
 
 function buildKnownStationMap(knownStations: KnownGasStation[]) {
-  return new Map(knownStations.map((station) => [station.osmId, station]));
+  const byOsmId = new Map<string, KnownGasStation>();
+  const byRegisteredName = new Map<string, KnownGasStation>();
+
+  for (const station of knownStations) {
+    if (station.osmId) {
+      byOsmId.set(station.osmId, station);
+    }
+
+    byRegisteredName.set(station.registeredName, station);
+  }
+
+  return { byOsmId, byRegisteredName };
+}
+
+function findKnownStation(
+  maps: ReturnType<typeof buildKnownStationMap>,
+  station: GasStation,
+) {
+  return (
+    maps.byOsmId.get(toOsmId(station.id)) ??
+    maps.byRegisteredName.get(station.name) ??
+    null
+  );
 }
 
 function toOsmId(id: number): string {
@@ -132,10 +154,10 @@ function toOsmId(id: number): string {
 
 function getStationDisplayInfo(
   station: GasStation,
-  knownByOsmId: Map<string, KnownGasStation>,
+  knownMaps: ReturnType<typeof buildKnownStationMap>,
   brands: GasStationBrandRecord[],
 ) {
-  const known = knownByOsmId.get(toOsmId(station.id));
+  const known = findKnownStation(knownMaps, station);
   const rawBrand = known?.brand ?? station.brand;
   const matchedBrand = matchGasStationBrand(rawBrand, brands, [station.name]);
   const selection = buildStationSelectionFromMap(
@@ -241,12 +263,13 @@ export function GasStationMapPicker({
   knownStations = [],
   onSelectStation,
 }: GasStationMapPickerProps) {
-  const knownByOsmId = useMemo(
+  const knownMaps = useMemo(
     () => buildKnownStationMap(knownStations),
     [knownStations],
   );
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const tileLayerRef = useRef<TileLayer | null>(null);
   const centerMarkerRef = useRef<LeafletMarker | null>(null);
   const stationMarkersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
@@ -261,8 +284,38 @@ export function GasStationMapPicker({
   const [mapCenter, setMapCenter] = useState<MapCenter | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isSearchingAtMapCenter, setIsSearchingAtMapCenter] = useState(false);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
   const activeRequestRef = useRef(0);
   const shouldFitBoundsRef = useRef(true);
+  const lastMapViewRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
+    null,
+  );
+
+  const handleExpandMap = useCallback(() => {
+    if (mapRef.current) {
+      const center = mapRef.current.getCenter();
+      lastMapViewRef.current = {
+        lat: center.lat,
+        lng: center.lng,
+        zoom: mapRef.current.getZoom(),
+      };
+    }
+
+    setIsMapExpanded(true);
+  }, []);
+
+  const handleCollapseMap = useCallback(() => {
+    if (mapRef.current) {
+      const center = mapRef.current.getCenter();
+      lastMapViewRef.current = {
+        lat: center.lat,
+        lng: center.lng,
+        zoom: mapRef.current.getZoom(),
+      };
+    }
+
+    setIsMapExpanded(false);
+  }, []);
 
   const loadStationsAt = useCallback(
     async (
@@ -399,54 +452,129 @@ export function GasStationMapPicker({
   }, [loadNearbyStations]);
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) {
+    if (!isMapExpanded) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMapExpanded]);
+
+  useEffect(() => {
+    if (!isMapExpanded) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        handleCollapseMap();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleCollapseMap, isMapExpanded]);
+
+  useLayoutEffect(() => {
+    const container = mapContainerRef.current;
+
+    if (!container) {
       return;
     }
 
     let disposed = false;
 
-    void import("leaflet").then((leafletModule) => {
-      if (disposed || !mapContainerRef.current) {
+    centerMarkerRef.current?.remove();
+    centerMarkerRef.current = null;
+    stationMarkersRef.current.forEach((marker) => marker.remove());
+    stationMarkersRef.current.clear();
+    mapRef.current?.remove();
+    mapRef.current = null;
+    tileLayerRef.current = null;
+    setMapReady(false);
+
+    const initMap = () => {
+      if (disposed || !mapContainerRef.current || !leafletRef.current) {
         return;
       }
 
-      const L =
-        "default" in leafletModule
-          ? (leafletModule as { default: typeof import("leaflet") }).default
-          : leafletModule;
-      leafletRef.current = L;
+      const L = leafletRef.current;
+      const saved = lastMapViewRef.current;
+      const lat = saved?.lat ?? mapCenter?.lat ?? OSAKA_STATION_FALLBACK.lat;
+      const lng = saved?.lng ?? mapCenter?.lon ?? OSAKA_STATION_FALLBACK.lon;
+      const zoom = saved?.zoom ?? 14;
 
       const map = L.map(mapContainerRef.current, {
         zoomControl: true,
         scrollWheelZoom: true,
-      }).setView([OSAKA_STATION_FALLBACK.lat, OSAKA_STATION_FALLBACK.lon], 14);
+      }).setView([lat, lng], zoom);
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      const tileLayer = L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+          maxZoom: 19,
+        },
+      ).addTo(map);
 
+      tileLayerRef.current = tileLayer;
       mapRef.current = map;
-      setMapReady(true);
+
+      map.whenReady(() => {
+        if (disposed) {
+          return;
+        }
+
+        map.invalidateSize({ animate: false, pan: false });
+        tileLayer.redraw();
+        setMapReady(true);
+      });
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        void import("leaflet").then((leafletModule) => {
+          if (disposed || !mapContainerRef.current) {
+            return;
+          }
+
+          leafletRef.current =
+            "default" in leafletModule
+              ? (leafletModule as { default: typeof import("leaflet") }).default
+              : leafletModule;
+
+          initMap();
+        });
+      });
     });
 
     return () => {
       disposed = true;
+      window.cancelAnimationFrame(frame);
       centerMarkerRef.current?.remove();
       centerMarkerRef.current = null;
+      stationMarkersRef.current.forEach((marker) => marker.remove());
+      stationMarkersRef.current.clear();
+      tileLayerRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
-      leafletRef.current = null;
       setMapReady(false);
     };
-  }, []);
+  }, [isMapExpanded]);
 
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
 
-    if (!map || !L || !mapCenter) {
+    if (!map || !L || !mapCenter || !mapReady) {
       return;
     }
 
@@ -479,13 +607,13 @@ export function GasStationMapPicker({
         centerMarkerRef.current.openPopup();
       }
     }
-  }, [mapCenter]);
+  }, [mapCenter, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
 
-    if (!map || !L || !mapCenter) {
+    if (!map || !L || !mapCenter || !mapReady) {
       return;
     }
 
@@ -494,7 +622,7 @@ export function GasStationMapPicker({
     markers.clear();
 
     for (const station of stations) {
-      const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
+      const info = getStationDisplayInfo(station, knownMaps, gasStationBrands);
       const marker = L.marker([station.lat, station.lon], {
         icon: L.divIcon(
           createGasStationIcon(getGasStationIconVariant(false, info.isKnown)),
@@ -504,7 +632,7 @@ export function GasStationMapPicker({
         .bindPopup(buildStationPopupHtml(info, station), { maxWidth: 240 });
 
       marker.on("click", () => {
-        const selected = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
+        const selected = getStationDisplayInfo(station, knownMaps, gasStationBrands);
         marker.setPopupContent(buildStationPopupHtml(selected, station, true));
         marker.openPopup();
         onSelectStation({
@@ -528,12 +656,20 @@ export function GasStationMapPicker({
       map.fitBounds(bounds.pad(0.15));
       shouldFitBoundsRef.current = false;
     }
-  }, [stations, selectedStationId, onSelectStation, mapCenter, knownByOsmId, gasStationBrands]);
+  }, [
+    stations,
+    selectedStationId,
+    onSelectStation,
+    mapCenter,
+    knownMaps,
+    gasStationBrands,
+    mapReady,
+  ]);
 
   useEffect(() => {
     const L = leafletRef.current;
 
-    if (!L) {
+    if (!L || !mapReady) {
       return;
     }
 
@@ -545,7 +681,7 @@ export function GasStationMapPicker({
       }
 
       const isSelected = toOsmId(station.id) === selectedStationId;
-      const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
+      const info = getStationDisplayInfo(station, knownMaps, gasStationBrands);
 
       marker.setIcon(
         L.divIcon(
@@ -556,10 +692,10 @@ export function GasStationMapPicker({
       );
       marker.setPopupContent(buildStationPopupHtml(info, station, isSelected));
     }
-  }, [selectedStationId, stations, knownByOsmId, gasStationBrands]);
+  }, [selectedStationId, stations, knownMaps, gasStationBrands, mapReady]);
 
   function handleSelectFromList(station: GasStation) {
-    const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
+    const info = getStationDisplayInfo(station, knownMaps, gasStationBrands);
     onSelectStation({
       id: toOsmId(station.id),
       mapName: info.mapName,
@@ -608,37 +744,101 @@ export function GasStationMapPicker({
   const canRetryGeolocation =
     failureReason === "permission-denied" || failureReason === "timeout";
 
+  const mapControlButtonClass =
+    "absolute z-[1000] rounded-full border border-slate-300 bg-white/95 text-slate-800 shadow-md backdrop-blur-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-100 dark:hover:bg-slate-800";
+
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <div
-          ref={mapContainerRef}
-          className="h-96 w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800"
-          aria-label="周辺のガソリンスタンド地図"
-        />
-
-        <div
-          className="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center text-2xl font-light leading-none text-slate-400/45 dark:text-slate-500/50"
-          aria-hidden="true"
-        >
-          +
-        </div>
-
-        {mapReady && (
-          <button
-            type="button"
-            onClick={handleSearchAtMapCenter}
-            disabled={phase === "loading"}
-            className="absolute top-3 left-1/2 z-[1000] -translate-x-1/2 rounded-full border border-slate-300 bg-white/95 px-4 py-2 text-sm font-medium text-slate-800 shadow-md backdrop-blur-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900/95 dark:text-slate-100 dark:hover:bg-slate-800"
-          >
-            {phase === "loading" && isSearchingAtMapCenter
-              ? "検索中..."
-              : "この位置で再検索"}
-          </button>
+      <div
+        className={
+          isMapExpanded
+            ? "fixed inset-0 z-[200] flex h-[100dvh] flex-col bg-slate-100 dark:bg-slate-900"
+            : "relative"
+        }
+      >
+        {isMapExpanded && (
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
+            <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
+              ガソリンスタンド地図
+            </p>
+            <button
+              type="button"
+              onClick={handleCollapseMap}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              閉じる
+            </button>
+          </div>
         )}
+
+        <div
+          className={
+            isMapExpanded
+              ? "relative h-[calc(100dvh-53px)] w-full shrink-0"
+              : "relative h-96 w-full"
+          }
+        >
+          <div
+            ref={mapContainerRef}
+            className={
+              isMapExpanded
+                ? "h-full w-full bg-slate-100 dark:bg-slate-800 [&_.leaflet-container]:!h-full [&_.leaflet-container]:!w-full"
+                : "h-full w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-700 dark:bg-slate-800 [&_.leaflet-container]:!h-full [&_.leaflet-container]:!w-full"
+            }
+            aria-label="周辺のガソリンスタンド地図"
+          />
+
+          <div
+            className="pointer-events-none absolute inset-0 z-[400] flex items-center justify-center text-2xl font-light leading-none text-slate-400/45 dark:text-slate-500/50"
+            aria-hidden="true"
+          >
+            +
+          </div>
+
+          {mapReady && (
+            <button
+              type="button"
+              onClick={handleSearchAtMapCenter}
+              disabled={phase === "loading"}
+              className={`${mapControlButtonClass} top-3 left-1/2 -translate-x-1/2 px-4 py-2 text-sm font-medium`}
+            >
+              {phase === "loading" && isSearchingAtMapCenter
+                ? "検索中..."
+                : "この位置で再検索"}
+            </button>
+          )}
+
+          {mapReady && !isMapExpanded && (
+            <button
+              type="button"
+              onClick={handleExpandMap}
+              className={`${mapControlButtonClass} right-3 bottom-3 p-2.5`}
+              aria-label="地図を全画面表示"
+              title="全画面表示"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="20"
+                height="20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+                <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+                <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+                <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
-      {mapReady && (
+      {mapReady && !isMapExpanded && (
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">
           地図中央の + が再検索の中心です。検索後は同じ + マークで検索地点を表示します。
         </p>
@@ -693,7 +893,7 @@ export function GasStationMapPicker({
               const isSelected = toOsmId(station.id) === selectedStationId;
               const { registrationName, mapName, isKnown } = getStationDisplayInfo(
                 station,
-                knownByOsmId,
+                knownMaps,
                 gasStationBrands,
               );
 

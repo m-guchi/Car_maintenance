@@ -9,6 +9,11 @@ import {
   reorderGasStationBrandsForUser,
   updateGasStationBrandForUser,
 } from "@/lib/gas-station-brands";
+import {
+  deleteRegisteredGasStationForUser,
+  setRegisteredGasStationHiddenForUser,
+  updateRegisteredGasStationForUser,
+} from "@/lib/registered-gas-stations";
 import { MAX_GAS_STATION_BRAND_KEYWORDS_LENGTH } from "@/lib/fuel-constants";
 
 export type SettingsActionState = {
@@ -123,5 +128,77 @@ export async function deleteGasStationBrandAction(
     return { ok: true };
   } catch {
     return { ok: false, error: "ブランドの削除に失敗しました" };
+  }
+}
+
+function revalidateFuelPaths() {
+  revalidatePath("/settings");
+  revalidatePath("/fuel/new");
+  revalidatePath("/fuel");
+}
+
+export async function updateRegisteredGasStationAction(
+  stationId: string,
+  _prevState: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await updateRegisteredGasStationForUser(userId, stationId, {
+      brandSelect: String(formData.get("gasStationBrands") ?? ""),
+      customBrand: String(formData.get("gasStationBrandOther") ?? ""),
+      storeName: String(formData.get("gasStationStoreName") ?? ""),
+      hiddenFromPicker: formData.get("hiddenFromPicker") === "on",
+    });
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateFuelPaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "登録店舗の更新に失敗しました" };
+  }
+}
+
+export async function setRegisteredGasStationHiddenAction(
+  stationId: string,
+  hiddenFromPicker: boolean,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await setRegisteredGasStationHiddenForUser(
+      userId,
+      stationId,
+      hiddenFromPicker,
+    );
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateFuelPaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "表示設定の更新に失敗しました" };
+  }
+}
+
+export async function deleteRegisteredGasStationAction(
+  stationId: string,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await deleteRegisteredGasStationForUser(userId, stationId);
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateFuelPaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "登録店舗の削除に失敗しました" };
   }
 }

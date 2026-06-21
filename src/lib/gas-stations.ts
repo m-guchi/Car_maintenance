@@ -7,7 +7,8 @@ import {
 } from "@/lib/gas-station-brand-types";
 
 export type KnownGasStation = {
-  osmId: string;
+  id?: string;
+  osmId: string | null;
   registeredName: string;
   brand: string | null;
 };
@@ -142,6 +143,27 @@ export function resolveBrandFormState(
 
 function isListedBrand(brand: string, brands: GasStationBrandRecord[]): boolean {
   return brands.some((item) => item.name === brand);
+}
+
+export function getStationSelectionKey(station: KnownGasStation): string {
+  return station.osmId ?? station.id ?? station.registeredName;
+}
+
+export function buildSelectionFromKnownStation(
+  known: KnownGasStation,
+  brands: GasStationBrandRecord[],
+) {
+  const brandState = resolveBrandFormState(known.brand, brands);
+  const effectiveBrand = brandState.effectiveBrand;
+
+  return {
+    id: known.osmId ?? "",
+    mapName: known.registeredName,
+    brandSelect: brandState.brandSelect,
+    customBrand: brandState.customBrand,
+    storeName: extractStoreNamePart(known.registeredName, effectiveBrand, brands),
+    registrationName: known.registeredName,
+  };
 }
 
 export function buildStationSelectionFromMap(

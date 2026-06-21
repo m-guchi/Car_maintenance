@@ -9,8 +9,12 @@ import {
 } from "@/lib/fuel-logs";
 import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
 import {
+  listKnownGasStationsForUser,
+  listPickerGasStationsForUser,
+  syncRegisteredGasStationsFromFuelLogs,
+} from "@/lib/registered-gas-stations";
+import {
   getPreviousOdometer,
-  buildKnownGasStationsFromLogs,
   serializeFuelLogsForClient,
 } from "@/lib/fuel-types";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
@@ -36,9 +40,12 @@ export default async function FuelNewPage() {
       ? getPreviousOdometer(clientFuelLogs, activeVehicle.initialOdometer)
       : (activeVehicle?.initialOdometer ?? null);
 
-  const knownGasStations = clientFuelLogs
-    ? buildKnownGasStationsFromLogs(clientFuelLogs)
-    : [];
+  if (userId) {
+    await syncRegisteredGasStationsFromFuelLogs(userId);
+  }
+
+  const knownGasStations = userId ? await listKnownGasStationsForUser(userId) : [];
+  const pickerGasStations = userId ? await listPickerGasStationsForUser(userId) : [];
 
   const gasStationBrands = userId
     ? await ensureGasStationBrandsForUser(userId)
@@ -83,6 +90,7 @@ export default async function FuelNewPage() {
             vehicleId={activeVehicle.id}
             previousOdometer={previousOdometer}
             knownGasStations={knownGasStations}
+            pickerGasStations={pickerGasStations}
             gasStationBrands={gasStationBrands}
           />
         )}

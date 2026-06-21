@@ -17,6 +17,7 @@ type FuelFormProps = {
   vehicleId: string;
   previousOdometer?: number | null;
   knownGasStations?: KnownGasStation[];
+  pickerGasStations?: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
 };
 
@@ -24,6 +25,7 @@ export function FuelForm({
   vehicleId,
   previousOdometer = null,
   knownGasStations = [],
+  pickerGasStations = [],
   gasStationBrands,
 }: FuelFormProps) {
   const router = useRouter();
@@ -49,6 +51,7 @@ export function FuelForm({
           key={state.resetToken ?? "new"}
           previousOdometer={previousOdometer}
           knownGasStations={knownGasStations}
+          pickerGasStations={pickerGasStations}
           gasStationBrands={gasStationBrands}
         />
 

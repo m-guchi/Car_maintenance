@@ -10,6 +10,11 @@ import {
   listFuelLogsForVehicle,
 } from "@/lib/fuel-logs";
 import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
+import {
+  listKnownGasStationsForUser,
+  listPickerGasStationsForUser,
+  syncRegisteredGasStationsFromFuelLogs,
+} from "@/lib/registered-gas-stations";
 import { serializeFuelLogsForClient } from "@/lib/fuel-types";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { getActiveVehicle } from "@/lib/vehicles";
@@ -37,6 +42,13 @@ export default async function FuelPage() {
   const gasStationBrands = userId
     ? await ensureGasStationBrandsForUser(userId)
     : [];
+
+  if (userId && fuelLogs) {
+    await syncRegisteredGasStationsFromFuelLogs(userId);
+  }
+
+  const knownGasStations = userId ? await listKnownGasStationsForUser(userId) : [];
+  const pickerGasStations = userId ? await listPickerGasStationsForUser(userId) : [];
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -90,6 +102,8 @@ export default async function FuelPage() {
               <FuelList
                 fuelLogs={clientFuelLogs}
                 vehicleInitialOdometer={activeVehicle.initialOdometer}
+                knownGasStations={knownGasStations}
+                pickerGasStations={pickerGasStations}
                 gasStationBrands={gasStationBrands}
               />
             )}

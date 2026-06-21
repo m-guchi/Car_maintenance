@@ -193,7 +193,14 @@ export function FuelFormFields({
       setCustomBrand(station.customBrand);
       setStoreName(station.storeName);
     },
-    [],
+    [
+      setBrandSelect,
+      setCustomBrand,
+      setMapStationName,
+      setSelectedStationId,
+      setSelectedStationKey,
+      setStoreName,
+    ],
   );
 
   const handleSelectRegisteredStation = useCallback(
@@ -206,7 +213,15 @@ export function FuelFormFields({
       setCustomBrand(selection.customBrand);
       setStoreName(selection.storeName);
     },
-    [gasStationBrands],
+    [
+      gasStationBrands,
+      setBrandSelect,
+      setCustomBrand,
+      setMapStationName,
+      setSelectedStationId,
+      setSelectedStationKey,
+      setStoreName,
+    ],
   );
 
   function handleBrandSelectChange(value: string) {

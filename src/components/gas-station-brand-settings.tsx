@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   createGasStationBrandAction,
@@ -44,16 +44,19 @@ export function GasStationBrandSettings({
 }: GasStationBrandSettingsProps) {
   const router = useRouter();
   const [orderedBrands, setOrderedBrands] = useState(() => sortBrandList(brands));
+  const [syncedBrands, setSyncedBrands] = useState(brands);
+
+  if (brands !== syncedBrands) {
+    setSyncedBrands(brands);
+    setOrderedBrands(sortBrandList(brands));
+  }
+
   const [reorderError, setReorderError] = useState<string | null>(null);
   const [reorderingBrandId, setReorderingBrandId] = useState<string | null>(null);
   const [createState, createAction, createPending] = useActionState(
     createGasStationBrandAction,
     initialState,
   );
-
-  useEffect(() => {
-    setOrderedBrands(sortBrandList(brands));
-  }, [brands]);
 
   const sortableBrands = orderedBrands.filter(
     (brand) => brand.name !== OTHER_GAS_STATION_BRAND_NAME,

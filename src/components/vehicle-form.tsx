@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef } from "react";
 
 import {
@@ -11,6 +12,7 @@ import { VehicleFormFields } from "@/components/vehicle-form-fields";
 const initialState: VehicleActionState = { ok: false };
 
 export function VehicleForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     createVehicleAction,
     initialState,
@@ -20,8 +22,9 @@ export function VehicleForm() {
   useEffect(() => {
     if (state.ok) {
       formRef.current?.reset();
+      router.refresh();
     }
-  }, [state.ok]);
+  }, [state.ok, router]);
 
   return (
     <section className="app-card border-l-4 border-l-blue-500">

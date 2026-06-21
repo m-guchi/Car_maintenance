@@ -64,12 +64,22 @@ function testTcp(host: string, port: number): Promise<boolean> {
 }
 
 async function main() {
-  const { isProduction, host, port, user, password, name } =
+  const { isProduction, useProdDb, useTunnel, host, port, user, password, name } =
     getDatabaseConfig();
 
-  console.log("環境:", isProduction ? "production" : "development");
-  if (isProduction) {
-    console.log("接続先:", `${host}:${port}`);
+  const envLabel = isProduction
+    ? "production"
+    : useProdDb
+      ? "development → production DB"
+      : "development";
+
+  console.log("環境:", envLabel);
+  if (useProdDb) {
+    if (useTunnel) {
+      console.log("接続先:", `${host}:${port}（SSH トンネル経由）`);
+    } else {
+      console.log("接続先:", `${host}:${port}（本番 DB 直結）`);
+    }
   } else {
     console.log("接続先:", `${DEV_DB_HOST}:${DEV_DB_PORT}（固定）`);
     console.log("Unix ソケット:", usesUnixSocket() ? "使用" : "未使用");
@@ -83,12 +93,15 @@ async function main() {
     process.exit(1);
   }
 
-  if (isProduction && (!host || !port)) {
+  if (useProdDb && (!host || !port)) {
     console.error("NG: 本番用 DB_HOST / DB_PORT が未設定です。");
+    if (useTunnel) {
+      console.error("   → npm run db:tunnel:prod を別ターミナルで起動してください。");
+    }
     process.exit(1);
   }
 
-  if (!isProduction) {
+  if (!useProdDb) {
     const mysqlLocal = isMysqlListeningLocally();
     console.log("ローカル MySQL:", mysqlLocal ? "起動中" : "未起動");
 
@@ -105,6 +118,21 @@ async function main() {
       if (!tcpOk) {
         process.exit(1);
       }
+    }
+  } else {
+    const tcpOk = await testTcp(host!, Number(port));
+    console.log(`TCP ${host}:${port}:`, tcpOk ? "OK" : "NG");
+    if (!tcpOk) {
+      console.error("");
+      if (useTunnel) {
+        console.error("NG: SSH トンネル経由で本番 DB に接続できません。");
+        console.error("  → 別ターミナルで npm run db:tunnel:prod を起動");
+      } else {
+        console.error("NG: 本番 DB に接続できません。");
+        console.error("  → DB_HOST / DB_PORT を確認");
+        console.error("  → VPS ローカルのみ待受の場合は npm run db:tunnel:prod を利用");
+      }
+      process.exit(1);
     }
   }
 
@@ -132,8 +160,13 @@ async function main() {
     }
     console.error("");
     console.error("確認:");
-    console.error("  → 1Password の db-user / db-password / db-name を確認");
-    console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+    if (useProdDb) {
+      console.error("  → 1Password の DB_HOST / DB_PORT / db-user / db-password を確認");
+      console.error("  → VPS ローカルのみ待受なら npm run db:tunnel:prod を起動");
+    } else {
+      console.error("  → 1Password の db-user / db-password / db-name を確認");
+      console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+    }
     process.exit(1);
   } finally {
     await prisma.$disconnect();

@@ -132,6 +132,7 @@
 | 秘密情報をリポジトリに含めない | ✅ | `.gitignore`, `.env.example` |
 | 1Password CLI 開発注入 | ✅ | `.env.op`, `scripts/with-op-env.sh` |
 | 開発 DB | ✅ | `127.0.0.1:3306` 固定。`npm run db:setup` |
+| 開発環境から本番 DB 確認 | ✅ | `DB_TARGET=production`, `scripts/with-op-prod-db.sh`, `scripts/prod-db-tunnel.sh` |
 | 本番 Secrets → GitHub Actions / pm2 | ⚠️ | `.github/deploy.env.tpl` 定義済み。1Password 登録・`OP_SERVICE_ACCOUNT_TOKEN` 要設定 |
 
 ### 環境変数（1Password / 本番）
@@ -139,7 +140,8 @@
 | 変数 | 用途 | 開発 | 本番 |
 |------|------|------|------|
 | `DB_USER`, `DB_PASSWORD`, `DB_NAME` | DB 認証 | ✅ | 要設定 |
-| `DB_HOST`, `DB_PORT` | 本番 DB | — | 要設定 |
+| `DB_HOST`, `DB_PORT` | 本番 DB | —（`db:*:prod` で使用） | 要設定 |
+| `SSH_HOST`, `SSH_USER`, `SSH_PORT` | 本番 DB SSH トンネル | 任意 | — |
 | `AUTH_SECRET` | NextAuth | ✅ | 要設定 |
 | `AUTH_URL` / `AUTH_URL_DEV` | 公開 URL | ✅ | 要設定 |
 | `GOOGLE_CLIENT_ID/SECRET` | OAuth | ✅ | 要設定 |
@@ -172,7 +174,7 @@
 給油:     src/app/(app)/fuel/, src/components/fuel-*.tsx, src/lib/fuel-*.ts, src/app/api/gas-stations/route.ts
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
-1Password: .env.op.example, scripts/with-op-env.sh, scripts/setup-db.sh
+1Password: .env.op.example, scripts/with-op-env.sh, scripts/with-op-prod-db.sh, scripts/prod-db-tunnel.sh, scripts/setup-db.sh
 PWA:      public/manifest.json, public/sw.js, src/components/app-bottom-nav.tsx, src/components/app-page.tsx
 DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/release.yml, .github/deploy.env.tpl, scripts/construct-database-url.sh, scripts/vps-bootstrap.sh
 進捗正本: docs/SPEC_PROGRESS.md  ← このファイル
@@ -187,6 +189,11 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 | `npm run db:migrate` | マイグレーション適用 (`migrate deploy`) |
 | `npm run db:migrate:dev` | 新規マイグレーション作成 (`migrate dev`) |
 | `npm run db:check` | DB 接続確認 |
+| `npm run db:check:prod` | 本番 DB 接続確認（直結） |
+| `npm run db:studio:prod` | Prisma Studio（本番 DB） |
+| `npm run db:tunnel:prod` | SSH トンネル（VPS MySQL が localhost 待受の場合） |
+| `npm run db:studio:prod:tunnel` | Prisma Studio（トンネル経由） |
+| `npm run dev:prod-db` | 開発サーバー + 本番 DB |
 
 ---
 
@@ -201,6 +208,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | 開発環境から本番 DB 確認（`db:*:prod`、SSH トンネル、`DB_TARGET=production`） |
 | 2026-06-21 | モバイルファースト UI（ボトムナビ・AppPage・safe-area・44px タップ領域・inputMode） |
 | 2026-06-21 | Git tag / GitHub Release workflow 追加（Portfolio 同様、`release.yml` 含む） |
 | 2026-06-21 | GitHub Actions デプロイ環境（build/deploy workflow、1Password 参照、VPS bootstrap） |

@@ -37,3 +37,28 @@ powershell -ExecutionPolicy Bypass -File scripts/wsl-port-forward.ps1
 - パスキー: HTTP + LAN IP では不可（Google ログインを利用）
 
 環境変数は 1Password CLI（`.env.op`）経由。詳細は `.env.example` を参照。
+
+## 本番 DB のデータ確認（開発環境）
+
+通常はローカル MySQL（`127.0.0.1:3306`）を使用。本番データの確認が必要なとき:
+
+```bash
+op signin
+npm run db:check:prod        # 接続確認
+npm run db:studio:prod       # Prisma Studio
+npm run dev:prod-db          # 開発サーバー（閲覧のみ推奨）
+```
+
+VPS の MySQL が localhost のみ待受の場合は SSH トンネルを使用:
+
+```bash
+# ターミナル 1
+npm run db:tunnel:prod
+
+# ターミナル 2
+npm run db:studio:prod:tunnel
+# または
+npm run dev:prod-db:tunnel
+```
+
+`.env.op` に `SSH_HOST` / `SSH_USER` / `SSH_PORT` を登録すること。`prisma migrate dev` は本番 DB ではブロックされる。

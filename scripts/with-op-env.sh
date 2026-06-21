@@ -29,8 +29,12 @@ fi
 
 # op run で DB 変数を注入 → DATABASE_URL を組み立て → コマンド実行
 # 開発時は AUTH_URL を export しない（リクエストのポートに合わせてアプリ側で設定）
+# DB_TARGET / DB_TUNNEL は本番 DB 確認用（with-op-prod-db.sh から渡される）
 exec op run --env-file="$ENV_FILE" -- bash -c '
   export DATABASE_URL
+  export DB_TARGET="${DB_TARGET:-}"
+  export DB_TUNNEL="${DB_TUNNEL:-}"
+  export PROD_DB_LOCAL_PORT="${PROD_DB_LOCAL_PORT:-}"
   DATABASE_URL="$(npx tsx "'"$ROOT"'/scripts/build-database-url.ts")"
   export DATABASE_URL
   if [ "${NODE_ENV:-development}" = "production" ]; then

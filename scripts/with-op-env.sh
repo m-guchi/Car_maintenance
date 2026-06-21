@@ -35,11 +35,11 @@ exec op run --env-file="$ENV_FILE" -- bash -c '
   export DB_TARGET="${DB_TARGET:-}"
   export DB_TUNNEL="${DB_TUNNEL:-}"
   export PROD_DB_LOCAL_PORT="${PROD_DB_LOCAL_PORT:-}"
-  DATABASE_URL="$(npx tsx "'"$ROOT"'/scripts/build-database-url.ts")"
+  DATABASE_URL="$(bash "'"$ROOT"'/scripts/tsx.sh" "'"$ROOT"'/scripts/build-database-url.ts")"
   export DATABASE_URL
   if [ "${NODE_ENV:-development}" = "production" ]; then
     export AUTH_URL
-    AUTH_URL="$(npx tsx "'"$ROOT"'/scripts/build-auth-url.ts")"
+    AUTH_URL="$(bash "'"$ROOT"'/scripts/tsx.sh" "'"$ROOT"'/scripts/build-auth-url.ts")"
     export AUTH_URL
   else
     unset AUTH_URL

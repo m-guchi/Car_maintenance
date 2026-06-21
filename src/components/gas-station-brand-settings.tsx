@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   createGasStationBrandAction,
@@ -57,6 +57,12 @@ export function GasStationBrandSettings({
     createGasStationBrandAction,
     initialState,
   );
+
+  useEffect(() => {
+    if (createState.ok) {
+      router.refresh();
+    }
+  }, [createState.ok, router]);
 
   const sortableBrands = orderedBrands.filter(
     (brand) => brand.name !== OTHER_GAS_STATION_BRAND_NAME,
@@ -198,6 +204,7 @@ function BrandRow({
   showOrderLabel: boolean;
   orderNumber: number;
 }) {
+  const router = useRouter();
   const boundUpdate = updateGasStationBrandAction.bind(null, brand.id);
   const [updateState, updateAction, updatePending] = useActionState(
     boundUpdate,
@@ -210,6 +217,13 @@ function BrandRow({
   const isOther = brand.name === OTHER_GAS_STATION_BRAND_NAME;
   const canMoveUp = !isOther && sortableIndex > 0;
   const canMoveDown = !isOther && sortableIndex >= 0 && sortableIndex < sortableCount - 1;
+
+  useEffect(() => {
+    if (updateState.ok) {
+      setEditing(false);
+      router.refresh();
+    }
+  }, [updateState.ok, router]);
 
   function handleDeleteClick() {
     setDeleteError(null);
@@ -233,7 +247,10 @@ function BrandRow({
     if (!result.ok) {
       setDeleteError(result.error ?? "削除に失敗しました");
       setDeleting(false);
+      return;
     }
+
+    router.refresh();
   }
 
   if (!editing) {

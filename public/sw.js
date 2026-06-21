@@ -1,12 +1,29 @@
-const CACHE_NAME = "car-maintenance-v2";
+const CACHE_NAME = "car-maintenance-v3";
 
 const PRECACHE_URLS = ["/manifest.json"];
 
-function shouldBypassCache(url) {
+function isNextDataRequest(request) {
+  return (
+    request.headers.get("RSC") === "1" ||
+    request.headers.get("Next-Router-Prefetch") === "1" ||
+    request.headers.has("Next-Router-State-Tree") ||
+    request.headers.has("Next-Url")
+  );
+}
+
+function isStaticAsset(url) {
+  return (
+    url.pathname === "/manifest.json" ||
+    /\.(?:svg|png|jpg|jpeg|gif|webp|ico)$/i.test(url.pathname)
+  );
+}
+
+function shouldBypassCache(url, request) {
   return (
     url.pathname.startsWith("/_next/") ||
     url.pathname.startsWith("/api/") ||
-    url.pathname === "/sw.js"
+    url.pathname === "/sw.js" ||
+    isNextDataRequest(request)
   );
 }
 
@@ -37,7 +54,7 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(event.request.url);
 
-  if (shouldBypassCache(url)) {
+  if (shouldBypassCache(url, event.request)) {
     return;
   }
 
@@ -49,6 +66,11 @@ self.addEventListener("fetch", (event) => {
         .then((response) => response)
         .catch(() => caches.match(event.request)),
     );
+    return;
+  }
+
+  // App Router のページデータ（RSC 等）はキャッシュしない。静的アセットのみ cache-first。
+  if (!isStaticAsset(url)) {
     return;
   }
 

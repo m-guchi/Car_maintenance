@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
-
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   deleteFuelLogAction,
@@ -56,6 +56,7 @@ function FuelEditForm({
   pickerGasStations: KnownGasStation[];
   gasStationBrands: GasStationBrandRecord[];
 }) {
+  const router = useRouter();
   const boundAction = updateFuelLogAction.bind(null, fuelLog.id);
   const [state, formAction, pending] = useActionState(
     boundAction,
@@ -64,9 +65,10 @@ function FuelEditForm({
 
   useEffect(() => {
     if (state.ok) {
+      router.refresh();
       onCancel();
     }
-  }, [state.ok, onCancel]);
+  }, [state.ok, onCancel, router]);
 
   return (
     <form
@@ -129,6 +131,7 @@ function FuelLogCard({
   selected: boolean;
   onToggleSelect: () => void;
 }) {
+  const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -157,7 +160,10 @@ function FuelLogCard({
     if (!result.ok) {
       setDeleteError(result.error ?? "削除に失敗しました");
       setDeleting(false);
+      return;
     }
+
+    router.refresh();
   }
 
   return (
@@ -285,6 +291,7 @@ export function FuelList({
   pickerGasStations,
   gasStationBrands,
 }: FuelListProps) {
+  const router = useRouter();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
@@ -361,6 +368,7 @@ export function FuelList({
 
     exitSelectionMode();
     setBulkDeleting(false);
+    router.refresh();
   }
 
   if (fuelLogs.length === 0) {

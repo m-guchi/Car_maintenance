@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   deleteRegisteredGasStationAction,
@@ -64,6 +65,7 @@ function StationRow({
   station: RegisteredGasStationRecord;
   gasStationBrands: GasStationBrandRecord[];
 }) {
+  const router = useRouter();
   const defaults = getRegisteredStationEditDefaults(station, gasStationBrands);
   const boundUpdate = updateRegisteredGasStationAction.bind(null, station.id);
   const [updateState, updateAction, updatePending] = useActionState(
@@ -79,6 +81,13 @@ function StationRow({
   const [hiddenFromPicker, setHiddenFromPicker] = useState(station.hiddenFromPicker);
   const [brandSelect, setBrandSelect] = useState(defaults.brandSelect);
 
+  useEffect(() => {
+    if (updateState.ok) {
+      setEditing(false);
+      router.refresh();
+    }
+  }, [updateState.ok, router]);
+
   async function handleHiddenChange(nextHidden: boolean) {
     setHiddenPending(true);
     setHiddenError(null);
@@ -93,6 +102,7 @@ function StationRow({
 
     setHiddenFromPicker(nextHidden);
     setHiddenPending(false);
+    router.refresh();
   }
 
   function handleDeleteClick() {
@@ -118,7 +128,10 @@ function StationRow({
     if (!result.ok) {
       setDeleteError(result.error ?? "削除に失敗しました");
       setDeleting(false);
+      return;
     }
+
+    router.refresh();
   }
 
   if (!editing) {

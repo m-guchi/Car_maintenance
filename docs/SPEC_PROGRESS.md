@@ -110,7 +110,7 @@
 | 要件 | 状態 | 備考 |
 |------|------|------|
 | `manifest.json`（standalone, theme） | ✅ | `public/manifest.json` |
-| Service Worker | ⚠️ | `public/sw.js`。**開発中は登録しない** (`service-worker-register.tsx`) |
+| Service Worker | ✅ | `public/sw.js`（RSC/動的ページはキャッシュしない）。**開発中は登録しない** (`service-worker-register.tsx`) |
 | モバイルファースト UI | ✅ | `app-bottom-nav.tsx`, `app-page.tsx`, `globals.css`（44px タップ・safe-area）, 全 `(app)` ページ |
 
 ---

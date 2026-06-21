@@ -77,6 +77,8 @@ if is_wsl; then
   print_urls
 fi
 
+bash "$ROOT_DIR/scripts/check-node.sh"
+
 export DEV_ALLOWED_ORIGINS="${DEV_ALLOWED_ORIGINS:-}"
 
-exec bash "$ROOT_DIR/scripts/with-op-env.sh" sh -c "npx tsx scripts/db-check.ts && prisma generate && next dev -H 0.0.0.0 -p ${PORT}"
+exec bash "$ROOT_DIR/scripts/with-op-env.sh" sh -c "bash scripts/tsx.sh scripts/db-check.ts && prisma generate && next dev -H 0.0.0.0 -p ${PORT}"

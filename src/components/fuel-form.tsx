@@ -43,7 +43,7 @@ export function FuelForm({
     <section className="app-card border-l-4 border-l-amber-500">
       <h2 className="app-section-title">給油情報を入力</h2>
       <p className="mt-1 text-sm text-slate-500">
-        前回給油からの距離を入力すると、オドメーターは自動計算されます。
+        前回給油からの距離を入力するとオドメーターが、満タン給油時は距離と給油量から燃費が自動計算されます。
       </p>
 
       <form action={formAction} className="mt-5 space-y-4">

@@ -21,6 +21,8 @@ import {
   resolveBrandFormState,
   type KnownGasStation,
 } from "@/lib/gas-stations";
+import { formatFuelEfficiency } from "@/lib/fuel-display";
+import { computeFuelEfficiencyForLog } from "@/lib/fuel-stats";
 import {
   calculateOdometerFromDistance,
   getInitialOdometerState,
@@ -142,6 +144,7 @@ export function FuelFormFields({
     () => getInitialSelectionKey(fuelLog, knownGasStations),
   );
   const [mapStationName, setMapStationName] = useState("");
+  const [isFull, setIsFull] = useState(fuelLog?.isFull ?? true);
   const visiblePickerStations = pickerGasStations ?? knownGasStations;
 
   const effectiveBrand =
@@ -156,6 +159,11 @@ export function FuelFormFields({
   const totalCost = totalCostEdited ? manualTotalCost : autoTotalCost;
   const autoOdometer = calculateOdometerFromDistance(distanceKm, previousOdometer);
   const displayOdometer = odometerManuallySet ? manualOdometer : autoOdometer;
+  const fuelEfficiency = computeFuelEfficiencyForLog({
+    isFull,
+    distanceKm: distanceKm === "" ? 0 : Number.parseFloat(distanceKm),
+    fuelAmount: fuelAmount === "" ? 0 : Number.parseFloat(fuelAmount),
+  });
 
   function handleToggleOdometerEdit() {
     if (odometerEditing) {
@@ -193,14 +201,7 @@ export function FuelFormFields({
       setCustomBrand(station.customBrand);
       setStoreName(station.storeName);
     },
-    [
-      setBrandSelect,
-      setCustomBrand,
-      setMapStationName,
-      setSelectedStationId,
-      setSelectedStationKey,
-      setStoreName,
-    ],
+    [],
   );
 
   const handleSelectRegisteredStation = useCallback(
@@ -213,15 +214,7 @@ export function FuelFormFields({
       setCustomBrand(selection.customBrand);
       setStoreName(selection.storeName);
     },
-    [
-      gasStationBrands,
-      setBrandSelect,
-      setCustomBrand,
-      setMapStationName,
-      setSelectedStationId,
-      setSelectedStationKey,
-      setStoreName,
-    ],
+    [gasStationBrands],
   );
 
   function handleBrandSelectChange(value: string) {
@@ -383,15 +376,33 @@ export function FuelFormFields({
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-        <input
-          type="checkbox"
-          name="isFull"
-          defaultChecked={fuelLog?.isFull ?? true}
-          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-        />
-        満タン給油（燃費計算に使用）
-      </label>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+          <input
+            type="checkbox"
+            name="isFull"
+            checked={isFull}
+            onChange={(event) => setIsFull(event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          />
+          満タン給油（燃費計算に使用）
+        </label>
+
+        {fuelEfficiency !== null ? (
+          <p className="inline-flex items-center rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200">
+            燃費 {formatFuelEfficiency(fuelEfficiency)}
+            <span className="ml-2 text-xs font-normal text-emerald-700/80 dark:text-emerald-300/80">
+              （距離 ÷ 給油量）
+            </span>
+          </p>
+        ) : (
+          <p className="text-xs text-slate-500">
+            {isFull
+              ? "距離と給油量を入力すると燃費を自動計算します"
+              : "満タン給油の場合のみ燃費を計算します"}
+          </p>
+        )}
+      </div>
 
       <div className="space-y-4">
         <div>
@@ -491,10 +502,10 @@ export function FuelFormFields({
               }
               className={inputClassName}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              登録名: {registrationName || "（ブランドと店舗名を入力）"}
-            </p>
-            {mapStationName && (
+          <p className="mt-1 text-xs text-slate-500">
+            登録名: {registrationName || "（ブランドと店舗名を入力）"}
+          </p>
+          {mapStationName && (
               <p className="mt-1 text-xs text-slate-500">
                 地図上の名称: {mapStationName}
               </p>

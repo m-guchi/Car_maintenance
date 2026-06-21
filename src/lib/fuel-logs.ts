@@ -126,11 +126,12 @@ export async function getFuelDashboardForVehicle(
   userId: string,
   vehicleId: string,
 ) {
+  const vehicle = await getVehicleForUser(userId, vehicleId);
   const logs = await listFuelLogsForVehicle(userId, vehicleId);
 
-  if (!logs) {
+  if (!vehicle || !logs) {
     return null;
   }
 
-  return computeFuelDashboardStats(logs);
+  return computeFuelDashboardStats(logs, vehicle.initialOdometer);
 }

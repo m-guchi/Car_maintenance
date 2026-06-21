@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
-import { FuelDashboard } from "@/components/fuel-dashboard";
+import { FuelDashboard, FuelMileageSummary } from "@/components/fuel-dashboard";
 import { FuelList } from "@/components/fuel-list";
 import {
   getFuelDashboardForVehicle,
@@ -93,6 +93,13 @@ export default async function FuelPage() {
                 給油を記録する
               </Link>
             </div>
+
+            {dashboardStats && (
+              <FuelMileageSummary
+                totalOdometerKm={dashboardStats.totalOdometerKm}
+                distanceSinceRegistrationKm={dashboardStats.totalDistanceKm}
+              />
+            )}
 
             {dashboardStats && dashboardStats.logCount > 0 && (
               <FuelDashboard stats={dashboardStats} />

@@ -5,7 +5,45 @@ import {
   formatPricePerLiter,
 } from "@/lib/fuel-display";
 import type { FuelDashboardStats } from "@/lib/fuel-stats";
-import { formatDateJa } from "@/lib/vehicle-display";
+import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
+
+type FuelMileageSummaryProps = {
+  totalOdometerKm: number | null;
+  distanceSinceRegistrationKm: number;
+};
+
+export function FuelMileageSummary({
+  totalOdometerKm,
+  distanceSinceRegistrationKm,
+}: FuelMileageSummaryProps) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="app-card border-l-4 border-l-violet-500 p-4">
+        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+          総走行距離
+        </p>
+        <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          {totalOdometerKm !== null ? formatOdometer(totalOdometerKm) : "—"}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          {totalOdometerKm !== null
+            ? "最新のオドメーター"
+            : "登録時走行距離または給油記録が必要"}
+        </p>
+      </div>
+
+      <div className="app-card border-l-4 border-l-sky-500 p-4">
+        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+          登録以降の走行距離
+        </p>
+        <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          {formatDistanceKmValue(distanceSinceRegistrationKm)}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">給油記録の走行距離合計</p>
+      </div>
+    </div>
+  );
+}
 
 type FuelDashboardProps = {
   stats: FuelDashboardStats;
@@ -143,7 +181,7 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
 
   return (
     <section className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="app-card border-l-4 border-l-emerald-500 p-4">
           <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
             直近の燃費
@@ -179,18 +217,6 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
           </p>
           <p className="mt-1 text-xs text-slate-500">
             {stats.logCount}件の記録
-          </p>
-        </div>
-
-        <div className="app-card border-l-4 border-l-violet-500 p-4">
-          <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-            累計走行距離
-          </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {formatDistanceKmValue(stats.totalDistanceKm)}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            給油間の距離合計
           </p>
         </div>
       </div>

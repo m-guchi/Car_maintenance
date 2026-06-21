@@ -1,5 +1,10 @@
 import type { FuelLog } from "@prisma/client";
 
+import {
+  computeDistanceSinceRegistration,
+  computeTotalOdometerKm,
+} from "@/lib/fuel-types";
+
 export type FuelEfficiencyPoint = {
   date: Date;
   kmPerLiter: number;
@@ -23,6 +28,7 @@ export type FuelDashboardStats = {
   totalCost: number;
   totalFuelAmount: number;
   totalDistanceKm: number;
+  totalOdometerKm: number | null;
   logCount: number;
   efficiencyHistory: FuelEfficiencyPoint[];
   monthlyCosts: MonthlyFuelCost[];
@@ -34,6 +40,7 @@ type NumericLike = number | FuelLog["distanceKm"] | FuelLog["fuelAmount"];
 type FuelLogLike = {
   date: Date;
   distanceKm: NumericLike;
+  odometer?: number | null;
   fuelAmount: NumericLike;
   pricePerLiter: number;
   totalCost: number;
@@ -138,7 +145,10 @@ export function computeFuelEfficiencyForLog(
   return distance / fuelAmount;
 }
 
-export function computeFuelDashboardStats(logs: FuelLogLike[]): FuelDashboardStats {
+export function computeFuelDashboardStats(
+  logs: FuelLogLike[],
+  vehicleInitialOdometer?: number | null,
+): FuelDashboardStats {
   const efficiencyHistory = computeFuelEfficiencyHistory(logs);
   const efficiencies = efficiencyHistory.map((point) => point.kmPerLiter);
   const averageEfficiency =
@@ -148,14 +158,21 @@ export function computeFuelDashboardStats(logs: FuelLogLike[]): FuelDashboardSta
   const latestEfficiency =
     efficiencies.length > 0 ? efficiencies[efficiencies.length - 1] : null;
 
+  const normalizedLogs = logs.map((log) => ({
+    date: log.date,
+    distanceKm: toNumber(log.distanceKm),
+    odometer: log.odometer ?? null,
+  }));
+
   return {
     averageEfficiency,
     latestEfficiency,
     totalCost: logs.reduce((sum, log) => sum + log.totalCost, 0),
     totalFuelAmount: logs.reduce((sum, log) => sum + toNumber(log.fuelAmount), 0),
-    totalDistanceKm: logs.reduce(
-      (sum, log) => sum + toNumber(log.distanceKm),
-      0,
+    totalDistanceKm: computeDistanceSinceRegistration(normalizedLogs),
+    totalOdometerKm: computeTotalOdometerKm(
+      normalizedLogs,
+      vehicleInitialOdometer,
     ),
     logCount: logs.length,
     efficiencyHistory: efficiencyHistory.slice(-6),

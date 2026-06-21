@@ -42,18 +42,11 @@ export function getBrandKeywords(brand: GasStationBrandRecord): string[] {
   return Array.from(keywords);
 }
 
-export function matchGasStationBrandFromList(
-  rawBrand: string | null,
+function matchGasStationBrandText(
+  text: string,
   brands: GasStationBrandRecord[],
-): string {
-  if (!rawBrand) {
-    return (
-      brands.find((brand) => brand.name === OTHER_GAS_STATION_BRAND_NAME)?.name ??
-      OTHER_GAS_STATION_BRAND_NAME
-    );
-  }
-
-  const normalized = rawBrand.toLowerCase();
+): string | null {
+  const normalized = text.toLowerCase();
 
   for (const brand of brands) {
     if (brand.name === OTHER_GAS_STATION_BRAND_NAME) {
@@ -66,11 +59,31 @@ export function matchGasStationBrandFromList(
       keywords.some(
         (keyword) =>
           normalized.includes(keyword) ||
-          rawBrand.includes(brand.name) ||
-          brand.name.includes(rawBrand),
+          text.includes(brand.name) ||
+          brand.name.includes(text),
       )
     ) {
       return brand.name;
+    }
+  }
+
+  return null;
+}
+
+export function matchGasStationBrandFromList(
+  rawBrand: string | null,
+  brands: GasStationBrandRecord[],
+  fallbackTexts: string[] = [],
+): string {
+  const texts = [rawBrand, ...fallbackTexts].filter(
+    (text): text is string => Boolean(text?.trim()),
+  );
+
+  for (const text of texts) {
+    const matched = matchGasStationBrandText(text.trim(), brands);
+
+    if (matched) {
+      return matched;
     }
   }
 

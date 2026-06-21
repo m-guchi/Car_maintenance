@@ -137,7 +137,7 @@ function getStationDisplayInfo(
 ) {
   const known = knownByOsmId.get(toOsmId(station.id));
   const rawBrand = known?.brand ?? station.brand;
-  const matchedBrand = matchGasStationBrand(rawBrand, brands);
+  const matchedBrand = matchGasStationBrand(rawBrand, brands, [station.name]);
   const selection = buildStationSelectionFromMap(
     station.name,
     matchedBrand,

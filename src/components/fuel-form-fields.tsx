@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { GasStationMapPicker } from "@/components/gas-station-map-picker";
 import { RegisteredGasStationPicker } from "@/components/registered-gas-station-picker";
@@ -185,37 +185,31 @@ export function FuelFormFields({
     setOdometerManuallySet(true);
   }
 
-  const handleSelectStation = useCallback(
-    (station: {
-      id: string;
-      mapName: string;
-      brandSelect: string;
-      customBrand: string;
-      storeName: string;
-      registrationName: string;
-    }) => {
-      setSelectedStationId(station.id || null);
-      setSelectedStationKey(station.id || station.registrationName);
-      setMapStationName(station.mapName);
-      setBrandSelect(station.brandSelect);
-      setCustomBrand(station.customBrand);
-      setStoreName(station.storeName);
-    },
-    [],
-  );
+  function handleSelectStation(station: {
+    id: string;
+    mapName: string;
+    brandSelect: string;
+    customBrand: string;
+    storeName: string;
+    registrationName: string;
+  }) {
+    setSelectedStationId(station.id || null);
+    setSelectedStationKey(station.id || station.registrationName);
+    setMapStationName(station.mapName);
+    setBrandSelect(station.brandSelect);
+    setCustomBrand(station.customBrand);
+    setStoreName(station.storeName);
+  }
 
-  const handleSelectRegisteredStation = useCallback(
-    (station: KnownGasStation) => {
-      const selection = buildSelectionFromKnownStation(station, gasStationBrands);
-      setSelectedStationId(selection.id || null);
-      setSelectedStationKey(getStationSelectionKey(station));
-      setMapStationName("");
-      setBrandSelect(selection.brandSelect);
-      setCustomBrand(selection.customBrand);
-      setStoreName(selection.storeName);
-    },
-    [gasStationBrands],
-  );
+  function handleSelectRegisteredStation(station: KnownGasStation) {
+    const selection = buildSelectionFromKnownStation(station, gasStationBrands);
+    setSelectedStationId(selection.id || null);
+    setSelectedStationKey(getStationSelectionKey(station));
+    setMapStationName("");
+    setBrandSelect(selection.brandSelect);
+    setCustomBrand(selection.customBrand);
+    setStoreName(selection.storeName);
+  }
 
   function handleBrandSelectChange(value: string) {
     setBrandSelect(value);

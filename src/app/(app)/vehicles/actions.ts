@@ -2,6 +2,7 @@
 
 import type { DriveType, FuelType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requireUserId } from "@/lib/auth-user";
 import {
@@ -276,12 +277,26 @@ export async function updateVehicleAction(
     }
 
     revalidatePath("/vehicles");
+    revalidatePath(`/vehicles/${vehicleId}`);
     revalidatePath("/");
 
-    return { ok: true };
-  } catch {
+    redirect(`/vehicles/${vehicleId}`);
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     return { ok: false, error: "車両の更新に失敗しました" };
   }
+}
+
+function isRedirectError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "digest" in error &&
+    typeof (error as { digest?: string }).digest === "string" &&
+    (error as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+  );
 }
 
 export async function deleteVehicleAction(
@@ -300,6 +315,25 @@ export async function deleteVehicleAction(
 
     return { ok: true };
   } catch {
+    return { ok: false, error: "車両の削除に失敗しました" };
+  }
+}
+
+export async function deleteVehicleAndRedirectAction(
+  vehicleId: string,
+): Promise<VehicleActionState> {
+  try {
+    const result = await deleteVehicleAction(vehicleId);
+
+    if (!result.ok) {
+      return result;
+    }
+
+    redirect("/vehicles");
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     return { ok: false, error: "車両の削除に失敗しました" };
   }
 }

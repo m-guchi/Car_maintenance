@@ -1,139 +1,9 @@
-"use client";
-
-import { useActionState, useEffect, useState } from "react";
-
-import {
-  deleteVehicleAction,
-  updateVehicleAction,
-  type VehicleActionState,
-} from "@/app/(app)/vehicles/actions";
-import { VehicleDetails } from "@/components/vehicle-details";
-import { VehicleFormFields } from "@/components/vehicle-form-fields";
+import { VehicleListItem } from "@/components/vehicle-list-item";
 import type { VehicleRecord } from "@/lib/vehicles";
 
 type VehicleListProps = {
   vehicles: VehicleRecord[];
 };
-
-const initialState: VehicleActionState = { ok: false };
-
-function VehicleEditForm({
-  vehicle,
-  onCancel,
-}: {
-  vehicle: VehicleRecord;
-  onCancel: () => void;
-}) {
-  const boundAction = updateVehicleAction.bind(null, vehicle.id);
-  const [state, formAction, pending] = useActionState(
-    boundAction,
-    initialState,
-  );
-
-  useEffect(() => {
-    if (state.ok) {
-      onCancel();
-    }
-  }, [state.ok, onCancel]);
-
-  return (
-    <form
-      action={formAction}
-      className="mt-4 space-y-4 border-t border-slate-100 pt-4 dark:border-slate-700"
-    >
-      <VehicleFormFields vehicle={vehicle} idPrefix={`edit-${vehicle.id}`} />
-
-      {state.error && (
-        <p className="app-alert-error">
-          {state.error}
-        </p>
-      )}
-
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={pending}
-          className="app-btn-primary px-3 py-2"
-        >
-          {pending ? "保存中..." : "保存"}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="app-btn-secondary px-3 py-2"
-        >
-          キャンセル
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
-  const [editing, setEditing] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  async function handleDelete() {
-    if (
-      !window.confirm(
-        `「${vehicle.name}」を削除しますか？\n関連する給油・メンテ記録も削除されます。`,
-      )
-    ) {
-      return;
-    }
-
-    setDeleting(true);
-    setDeleteError(null);
-
-    const result = await deleteVehicleAction(vehicle.id);
-
-    if (!result.ok) {
-      setDeleteError(result.error ?? "削除に失敗しました");
-      setDeleting(false);
-    }
-  }
-
-  return (
-    <article
-      className={`app-card border-l-4 p-5 ${
-        vehicle.isActive ? "border-l-emerald-500" : "border-l-slate-300 dark:border-l-slate-600"
-      }`}
-    >
-      <VehicleDetails vehicle={vehicle} />
-
-      {!editing && (
-        <div className="mt-4 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="app-btn-secondary px-3 py-1.5"
-          >
-            編集
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="app-btn-danger"
-          >
-            {deleting ? "削除中..." : "削除"}
-          </button>
-        </div>
-      )}
-
-      {deleteError && (
-        <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {deleteError}
-        </p>
-      )}
-
-      {editing && (
-        <VehicleEditForm vehicle={vehicle} onCancel={() => setEditing(false)} />
-      )}
-    </article>
-  );
-}
 
 export function VehicleList({ vehicles }: VehicleListProps) {
   if (vehicles.length === 0) {
@@ -157,8 +27,9 @@ export function VehicleList({ vehicles }: VehicleListProps) {
       <h2 className="app-section-title">
         登録済み車両（{vehicles.length}台）
       </h2>
+      <p className="text-sm app-text-subtle">車両をタップして詳細を表示</p>
       {vehicles.map((vehicle) => (
-        <VehicleCard key={vehicle.id} vehicle={vehicle} />
+        <VehicleListItem key={vehicle.id} vehicle={vehicle} />
       ))}
     </section>
   );

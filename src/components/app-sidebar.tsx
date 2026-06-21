@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { APP_VERSION } from "@/lib/app-version";
 import { isNavActive, navItems } from "@/lib/nav-items";
 
 type AppSidebarProps = {
@@ -85,6 +86,12 @@ export function AppSidebar({ open, onClose }: AppSidebarProps) {
             })}
           </ul>
         </nav>
+
+        <div className="border-t border-slate-200/80 px-4 py-3 dark:border-slate-700/80">
+          <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+            v{APP_VERSION}
+          </p>
+        </div>
       </aside>
     </>
   );

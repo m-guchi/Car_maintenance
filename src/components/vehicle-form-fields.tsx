@@ -39,8 +39,8 @@ export function VehicleFormFields({
         />
       </div>
 
-      <fieldset className="space-y-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4">
-        <legend className="px-1 text-sm font-medium text-blue-900">
+      <fieldset className="space-y-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+        <legend className="px-1 text-sm font-medium text-blue-900 dark:text-blue-300">
           推奨項目
         </legend>
 
@@ -133,8 +133,8 @@ export function VehicleFormFields({
         </div>
       </fieldset>
 
-      <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <summary className="cursor-pointer text-sm font-medium text-slate-700">
+      <details className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-600 dark:bg-slate-700/40">
+        <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
           任意項目を入力する
         </summary>
 
@@ -242,16 +242,16 @@ export function VehicleFormFields({
         </div>
       </details>
 
-      <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-3">
+      <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
         <input
           name="isActive"
           type="checkbox"
           defaultChecked={vehicle?.isActive ?? true}
-          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-500 dark:bg-slate-700"
         />
-        <span className="text-sm text-slate-700">
+        <span className="text-sm text-slate-700 dark:text-slate-300">
           <span className="font-medium">使用中の車両として設定</span>
-          <span className="mt-0.5 block text-slate-500">
+          <span className="mt-0.5 block app-text-subtle">
             他の車両は自動的に「使用停止」になります
           </span>
         </span>

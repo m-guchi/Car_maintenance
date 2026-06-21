@@ -12,15 +12,17 @@ const featureCards = [
     title: "給油記録",
     desc: "燃費・ガソリン代の管理",
     emoji: "⛽",
-    accent: "border-l-amber-400 bg-amber-50/50 hover:border-amber-300",
-    iconBg: "bg-amber-100",
+    accent:
+      "border-l-amber-400 bg-amber-50/50 hover:border-amber-300 dark:border-l-amber-500 dark:bg-amber-950/30 dark:hover:border-amber-400",
+    iconBg: "bg-amber-100 dark:bg-amber-900/40",
   },
   {
     title: "メンテナンス",
     desc: "カテゴリ別の整備履歴",
     emoji: "🔧",
-    accent: "border-l-violet-400 bg-violet-50/50 hover:border-violet-300",
-    iconBg: "bg-violet-100",
+    accent:
+      "border-l-violet-400 bg-violet-50/50 hover:border-violet-300 dark:border-l-violet-500 dark:bg-violet-950/30 dark:hover:border-violet-400",
+    iconBg: "bg-violet-100 dark:bg-violet-900/40",
   },
   {
     title: "車両管理",
@@ -28,15 +30,17 @@ const featureCards = [
     emoji: "🚙",
     href: "/vehicles",
     ready: true,
-    accent: "border-l-emerald-400 bg-emerald-50/50 hover:border-emerald-300",
-    iconBg: "bg-emerald-100",
+    accent:
+      "border-l-emerald-400 bg-emerald-50/50 hover:border-emerald-300 dark:border-l-emerald-500 dark:bg-emerald-950/30 dark:hover:border-emerald-400",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/40",
   },
   {
     title: "設定",
     desc: "カテゴリ・パスキー管理",
     emoji: "⚙️",
-    accent: "border-l-slate-300 bg-slate-50/50",
-    iconBg: "bg-slate-100",
+    accent:
+      "border-l-slate-300 bg-slate-50/50 dark:border-l-slate-500 dark:bg-slate-800/50",
+    iconBg: "bg-slate-100 dark:bg-slate-700",
   },
 ] as const;
 
@@ -67,26 +71,26 @@ export default async function HomePage() {
 
         <section className="app-card overflow-hidden border-l-4 border-l-blue-500">
           <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-2xl">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-2xl dark:bg-blue-900/40">
               🚗
             </div>
             <div className="min-w-0 flex-1">
               <h2 className="app-section-title">ようこそ</h2>
               {activeVehicle ? (
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                <p className="mt-2 text-sm leading-relaxed app-text-muted">
                   使用中の車両:{" "}
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
                     {activeVehicle.name}
                   </span>
                   {activeVehicleSubtitle && (
-                    <span className="text-slate-500">
+                    <span className="app-text-subtle">
                       {" "}
                       （{activeVehicleSubtitle}）
                     </span>
                   )}
                 </p>
               ) : (
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                <p className="mt-2 text-sm leading-relaxed app-text-muted">
                   まず車両を登録して、給油記録やメンテナンス管理を始めましょう。
                 </p>
               )}
@@ -100,7 +104,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <h2 className="mt-8 mb-4 text-sm font-semibold tracking-wide text-slate-500 uppercase">
+        <h2 className="mt-8 mb-4 text-sm font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
           メニュー
         </h2>
 
@@ -115,14 +119,14 @@ export default async function HomePage() {
                   {item.emoji}
                 </span>
                 <div className="min-w-0">
-                  <h3 className="font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-0.5 text-sm text-slate-600">{item.desc}</p>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</h3>
+                  <p className="mt-0.5 text-sm app-text-muted">{item.desc}</p>
                   {"ready" in item && item.ready ? (
-                    <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                    <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                       利用可能
                     </span>
                   ) : (
-                    <span className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    <span className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
                       準備中
                     </span>
                   )}
@@ -130,7 +134,7 @@ export default async function HomePage() {
               </div>
             );
 
-            const cardClassName = `rounded-xl border border-slate-200/80 border-l-4 p-4 shadow-sm transition ${item.accent} ${
+            const cardClassName = `rounded-xl border border-slate-200/80 border-l-4 p-4 shadow-sm transition dark:border-slate-700/80 ${item.accent} ${
               "href" in item && item.href
                 ? "hover:shadow-md"
                 : "opacity-70"

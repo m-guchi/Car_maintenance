@@ -29,8 +29,8 @@ function LoginForm() {
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <div className="app-card overflow-hidden p-0 shadow-lg shadow-blue-900/10">
-          <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-600 px-6 py-8 text-center">
+        <div className="app-card overflow-hidden p-0 shadow-lg shadow-blue-900/10 dark:shadow-black/30">
+          <div className="bg-gradient-to-r from-blue-800 via-blue-700 to-blue-600 px-6 py-8 text-center dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-2xl backdrop-blur-sm">
               🚗
             </div>
@@ -42,7 +42,7 @@ function LoginForm() {
 
           <div className="space-y-4 p-6">
             {(error || passkeyError) && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="app-alert-error px-4 py-3">
                 {passkeyError ??
                   (error === "AccessDenied"
                     ? "許可されていないアカウントです。管理者に連絡してください。"
@@ -53,7 +53,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => signIn("google", { callbackUrl })}
-              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 active:scale-[0.98]"
+              className="flex w-full items-center justify-center gap-3 rounded-xl bg-white px-4 py-3.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-50 active:scale-[0.98] dark:bg-slate-700 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-600"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -86,7 +86,7 @@ function LoginForm() {
               {passkeyLoading ? "認証中..." : "パスキー（顔認証）でログイン"}
             </button>
 
-            <p className="text-center text-xs leading-relaxed text-slate-400">
+            <p className="text-center text-xs leading-relaxed text-slate-400 dark:text-slate-500">
               初回は Google ログイン後、パスキーを登録してください
             </p>
           </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
     <Suspense
       fallback={
         <div className="flex min-h-full flex-1 items-center justify-center">
-          <p className="text-slate-500">読み込み中...</p>
+          <p className="text-slate-500 dark:text-slate-400">読み込み中...</p>
         </div>
       }
     >

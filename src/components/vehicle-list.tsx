@@ -39,12 +39,12 @@ function VehicleEditForm({
   return (
     <form
       action={formAction}
-      className="mt-4 space-y-4 border-t border-slate-100 pt-4"
+      className="mt-4 space-y-4 border-t border-slate-100 pt-4 dark:border-slate-700"
     >
       <VehicleFormFields vehicle={vehicle} idPrefix={`edit-${vehicle.id}`} />
 
       {state.error && (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="app-alert-error">
           {state.error}
         </p>
       )}
@@ -97,7 +97,7 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
   return (
     <article
       className={`app-card border-l-4 p-5 ${
-        vehicle.isActive ? "border-l-emerald-500" : "border-l-slate-300"
+        vehicle.isActive ? "border-l-emerald-500" : "border-l-slate-300 dark:border-l-slate-600"
       }`}
     >
       <VehicleDetails vehicle={vehicle} />
@@ -115,7 +115,7 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-60"
+            className="app-btn-danger"
           >
             {deleting ? "削除中..." : "削除"}
           </button>
@@ -138,14 +138,14 @@ function VehicleCard({ vehicle }: { vehicle: VehicleRecord }) {
 export function VehicleList({ vehicles }: VehicleListProps) {
   if (vehicles.length === 0) {
     return (
-      <section className="app-card-muted border border-dashed border-slate-300 p-8 text-center">
+      <section className="app-card-muted border border-dashed border-slate-300 p-8 text-center dark:border-slate-600">
         <span className="text-3xl" aria-hidden="true">
           🚗
         </span>
-        <h2 className="mt-3 text-base font-semibold text-slate-900">
+        <h2 className="mt-3 text-base font-semibold text-slate-900 dark:text-slate-100">
           登録済みの車両はありません
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm app-text-subtle">
           上のフォームから最初の車両を登録してください
         </p>
       </section>

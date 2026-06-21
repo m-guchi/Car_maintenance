@@ -50,15 +50,15 @@ export function VehicleDetails({ vehicle }: VehicleDetailsProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-medium text-slate-900">{vehicle.name}</h3>
+            <h3 className="text-base font-medium text-slate-900 dark:text-slate-100">{vehicle.name}</h3>
             {vehicle.isActive && (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
                 使用中
               </span>
             )}
           </div>
           {subtitle && (
-            <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+            <p className="mt-1 text-sm app-text-subtle">{subtitle}</p>
           )}
         </div>
         <span className="shrink-0 text-2xl" aria-hidden="true">
@@ -71,10 +71,10 @@ export function VehicleDetails({ vehicle }: VehicleDetailsProps) {
           {details.map((item) => (
             <div
               key={item.label}
-              className="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
+              className="app-detail-cell"
             >
-              <dt className="text-xs font-medium text-slate-500">{item.label}</dt>
-              <dd className="mt-0.5 break-words text-sm font-medium text-slate-800">
+              <dt className="text-xs font-medium app-text-subtle">{item.label}</dt>
+              <dd className="mt-0.5 break-words text-sm font-medium text-slate-800 dark:text-slate-200">
                 {item.value}
               </dd>
             </div>

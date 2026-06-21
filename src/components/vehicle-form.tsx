@@ -26,7 +26,7 @@ export function VehicleForm() {
   return (
     <section className="app-card border-l-4 border-l-blue-500">
       <h2 className="app-section-title">車両を登録</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm app-text-subtle">
         車両名は必須です。車種名・型式・燃料種別・車検満了日の入力を推奨します。
       </p>
 
@@ -34,13 +34,13 @@ export function VehicleForm() {
         <VehicleFormFields />
 
         {state.error && (
-          <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="app-alert-error">
             {state.error}
           </p>
         )}
 
         {state.ok && (
-          <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          <p className="app-alert-success">
             車両を登録しました
           </p>
         )}

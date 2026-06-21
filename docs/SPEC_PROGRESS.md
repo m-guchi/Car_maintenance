@@ -2,7 +2,7 @@
 
 > **他 Agent 向け:** 本ファイルが仕様書（Discord通知機能追加版）に対する実装状況の正本です。  
 > 機能追加・デプロイ完了時は **必ず本ファイルを更新** してください。  
-> **最終更新:** 2026-06-21
+> **最終更新:** 2026-06-22
 
 ## ステータス凡例
 
@@ -110,7 +110,7 @@
 | 要件 | 状態 | 備考 |
 |------|------|------|
 | `manifest.json`（standalone, theme） | ✅ | `public/manifest.json` |
-| Service Worker | ⚠️ | `public/sw.js`。**開発中は登録しない** (`service-worker-register.tsx`) |
+| Service Worker | ✅ | `public/sw.js`（RSC/動的ページはキャッシュしない）。**開発中は登録しない** (`service-worker-register.tsx`) |
 | モバイルファースト UI | ✅ | `app-bottom-nav.tsx`, `app-page.tsx`, `globals.css`（44px タップ・safe-area）, 全 `(app)` ページ |
 
 ---
@@ -211,6 +211,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-22 | v1.0.1: 本番パスキーログイン修正（`authenticators.credential_id` に unique 追加）、デプロイ `.env` クォート・DB ヘルスチェック |
 | 2026-06-21 | 設定画面に登録店舗管理（編集・削除・登録画面への非表示、`registered_gas_stations`） |
 | 2026-06-21 | 給油フォームに登録済み店舗クイック選択（`registered-gas-station-picker.tsx`） |
 | 2026-06-21 | 給油記録のまとめて削除（選択モード・`deleteFuelLogsAction`） |

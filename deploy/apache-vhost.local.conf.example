@@ -1,0 +1,33 @@
+# Copy to apache-vhost.local.conf and set your real values.
+# apache-vhost.local.conf is gitignored — keep secrets/paths off GitHub.
+#
+#   cp deploy/apache-vhost.local.conf.example deploy/apache-vhost.local.conf
+#
+# Then replace <SERVER_NAME>, <APP_PORT>, and optionally <PHPMYADMIN_PATH>.
+
+<VirtualHost *:80>
+    ServerName <SERVER_NAME>
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "http"
+
+    ProxyPass / http://127.0.0.1:<APP_PORT>/
+    ProxyPassReverse / http://127.0.0.1:<APP_PORT>/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName <SERVER_NAME>
+
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/<SERVER_NAME>/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/<SERVER_NAME>/privkey.pem
+
+    ProxyPreserveHost On
+    RequestHeader set X-Forwarded-Proto "https"
+
+    ProxyPass <PHPMYADMIN_PATH> !
+    ProxyPassReverse <PHPMYADMIN_PATH> !
+
+    ProxyPass / http://127.0.0.1:<APP_PORT>/
+    ProxyPassReverse / http://127.0.0.1:<APP_PORT>/
+</VirtualHost>

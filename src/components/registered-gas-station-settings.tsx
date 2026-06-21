@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 
 import {
@@ -64,13 +65,21 @@ function StationRow({
   station: RegisteredGasStationRecord;
   gasStationBrands: GasStationBrandRecord[];
 }) {
+  const router = useRouter();
   const defaults = getRegisteredStationEditDefaults(station, gasStationBrands);
+  const [editing, setEditing] = useState(false);
   const boundUpdate = updateRegisteredGasStationAction.bind(null, station.id);
   const [updateState, updateAction, updatePending] = useActionState(
-    boundUpdate,
+    async (prev: SettingsActionState, formData: FormData) => {
+      const result = await boundUpdate(prev, formData);
+      if (result.ok) {
+        setEditing(false);
+        router.refresh();
+      }
+      return result;
+    },
     initialState,
   );
-  const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -93,6 +102,7 @@ function StationRow({
 
     setHiddenFromPicker(nextHidden);
     setHiddenPending(false);
+    router.refresh();
   }
 
   function handleDeleteClick() {
@@ -118,7 +128,10 @@ function StationRow({
     if (!result.ok) {
       setDeleteError(result.error ?? "削除に失敗しました");
       setDeleting(false);
+      return;
     }
+
+    router.refresh();
   }
 
   if (!editing) {

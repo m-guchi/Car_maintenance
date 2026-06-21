@@ -1,36 +1,219 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Car Maintenance
 
-## Getting Started
+個人用の車両メンテナンス・給油記録アプリ。スマートフォン向け PWA として利用できる Next.js アプリケーションです。
 
-First, run the development server:
+## 機能
+
+| 機能 | 説明 |
+|------|------|
+| 認証 | Google ログイン、パスキー（WebAuthn）、許可メールアドレスによるアクセス制限 |
+| 車両管理 | 車両の登録・編集・削除、アクティブ車両の切り替え |
+| 給油記録 | 給油入力・一覧・燃費ダッシュボード、周辺ガソリンスタンド検索 |
+| 設定 | ガソリンスタンドブランド・登録店舗の管理 |
+| 通知 | 新規登録・ログイン時の Discord Webhook 通知 |
+| PWA | `manifest.json` と Service Worker によるホーム画面追加対応 |
+
+メンテナンス記録・カテゴリ管理はスキーマのみ整備済みで、UI は未実装です。実装状況の詳細は [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) を参照してください。
+
+## 技術スタック
+
+- **フロントエンド:** Next.js 16（App Router）、React 19、TypeScript、Tailwind CSS 4
+- **バックエンド:** Next.js Server Actions / Route Handlers
+- **認証:** NextAuth.js（Auth.js）— Google OAuth、WebAuthn
+- **データベース:** MySQL + Prisma 7
+- **機密情報:** 1Password CLI（`.env.op`）
+- **本番運用:** VPS + Apache リバースプロキシ + pm2、GitHub Actions によるデプロイ
+
+## 必要条件
+
+- Node.js **20.19.0 以上**（[`.nvmrc`](./.nvmrc) 参照）
+- MySQL（開発時はローカル `127.0.0.1:3306`）
+- [1Password CLI](https://developer.1password.com/docs/cli/)（`op` コマンド）
+- Google OAuth クライアント（ログイン用）
+
+## セットアップ
+
+### 1. 依存関係のインストール
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 環境変数（1Password）
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+秘密情報はリポジトリに含めず、1Password 経由で注入します。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run env:init          # .env.op.example → .env.op をコピー
+# .env.op 内の op:// パスを自分の Vault / アイテム名に合わせて編集
+op signin
+```
 
-## Learn More
+1Password の「Car Maintenance」アイテムに登録するフィールド一覧は [`.env.example`](./.env.example) を参照してください。
 
-To learn more about Next.js, take a look at the following resources:
+### 3. データベース
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+sudo service mysql start   # MySQL が未起動の場合
+op signin
+npm run db:setup           # DB・ユーザーを作成
+npm run db:migrate         # マイグレーション適用
+npm run db:check           # 接続確認
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+スキーマ変更時は `npm run db:migrate:dev` で新規マイグレーションを作成します。
 
-## Deploy on Vercel
+### 4. 開発サーバー起動
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+op signin
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開きます。
+
+## WSL2 でのスマホ確認
+
+`npm run dev` 起動時に Windows 側のポート転送（3000）を自動更新し、LAN 用 URL を表示します。表示された `Phone: http://…` をスマホのブラウザで開いてください（PC と同一 Wi-Fi）。
+
+WSL 再起動後の初回は UAC（管理者承認）が求められることがあります。手動でポート転送する場合は、管理者 PowerShell で次を実行します。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/wsl-port-forward.ps1
+```
+
+**Google ログイン（LAN 経由）:** OAuth クライアントに `http://<LAN-IP>.sslip.io:3000/api/auth/callback/google` を追加してください（生 IP は Google が拒否します）。
+
+**パスキー:** HTTP + LAN IP では利用できません。LAN 経由の確認時は Google ログインを使用してください。
+
+## よく使うコマンド
+
+| コマンド | 用途 |
+|----------|------|
+| `npm run dev` | 開発サーバー起動 |
+| `npm run build` | 本番ビルド |
+| `npm run start` | 本番モードで起動 |
+| `npm run lint` | ESLint |
+| `npm run env:check` | 環境変数の確認 |
+| `npm run db:studio` | Prisma Studio（ローカル DB） |
+| `npm run db:migrate` | マイグレーション適用 |
+| `npm run db:migrate:dev` | 新規マイグレーション作成 |
+
+### 本番 DB の確認（開発環境から）
+
+通常はローカル MySQL を使用します。本番データの確認が必要な場合:
+
+```bash
+op signin
+npm run db:check:prod        # 接続確認
+npm run db:studio:prod       # Prisma Studio
+npm run dev:prod-db          # 開発サーバー（閲覧のみ推奨）
+```
+
+VPS の MySQL が localhost のみ待受の場合は SSH トンネルを使用します。
+
+```bash
+# ターミナル 1
+npm run db:tunnel:prod
+
+# ターミナル 2
+npm run db:studio:prod:tunnel
+# または
+npm run dev:prod-db:tunnel
+```
+
+`.env.op` に `SSH_HOST` / `SSH_USER` / `SSH_PORT` を登録してください。`prisma migrate dev` は本番 DB ではブロックされます。
+
+## ブランチ戦略
+
+| ブランチ | 用途 |
+|----------|------|
+| `develop` | 機能開発 |
+| `main` | 安定版。マージ時に GitHub Actions が VPS へデプロイ |
+
+## バージョン管理
+
+バージョンの正本は [`package.json`](./package.json) の `version` フィールドです。`main` へのマージ時、GitHub Actions がこの値から `v1.0.1` 形式の Git タグと GitHub Release を自動作成します。
+
+### リリース手順
+
+`develop` でバージョンを上げてから `main` にマージします。タグは CI が `main` 上で付けるため、ローカルでは **`--no-git-tag-version`** を付けて `package.json` / `package-lock.json` だけ更新してください（ローカルでタグを作ると、マージ後のデプロイが「タグが既に別コミットを指している」として失敗します）。
+
+```bash
+git checkout develop
+git pull
+
+# パッチ（バグ修正）: 1.0.1 → 1.0.2
+npm version patch --no-git-tag-version
+
+# マイナー（機能追加）: 1.0.1 → 1.1.0
+npm version minor --no-git-tag-version
+
+# メジャー（破壊的変更）: 1.0.1 → 2.0.0
+npm version major --no-git-tag-version
+
+git add package.json package-lock.json
+git commit -m "chore: release v$(node -p "require('./package.json').version")"
+git push origin develop
+
+# PR を作成して main にマージ（または fast-forward マージ）
+```
+
+`main` マージ後の流れ:
+
+1. `deploy.yml` が `package.json` のバージョンから `v*` タグを作成
+2. 同 workflow 内で GitHub Release を作成
+3. ビルド・VPS デプロイを実行
+
+同じバージョン番号で再デプロイする場合は、先にバージョンを上げてから `main` にマージする必要があります（タグが既に別コミットを指していると workflow がエラーになります）。
+
+### コマンド早見表
+
+| コマンド | 用途 |
+|----------|------|
+| `npm version patch --no-git-tag-version` | パッチ版を上げる（`x.y.Z`） |
+| `npm version minor --no-git-tag-version` | マイナー版を上げる（`x.Y.0`） |
+| `npm version major --no-git-tag-version` | メジャー版を上げる（`X.0.0`） |
+| `node -p "require('./package.json').version"` | 現在のバージョンを表示 |
+
+プレリリース（例: `1.1.0-beta.0`）が必要な場合は `npm version prerelease --preid=beta --no-git-tag-version` を使用します。タグ名に `-` が含まれると GitHub Release は prerelease として扱われます。
+
+## 本番デプロイ
+
+`main` ブランチへの push で GitHub Actions が次を実行します。
+
+1. `package.json` のバージョンから Git タグ・GitHub Release を作成
+2. CI でビルド
+3. VPS へ転送し `.env` を同期
+4. `prisma migrate deploy` → `pm2 reload`
+
+初回セットアップは `scripts/vps-bootstrap.sh` と 1Password の本番シークレット登録が必要です。詳細は [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) の「開発・運用フロー、インフラ」セクションを参照してください。
+
+本番では pm2（[`ecosystem.config.js`](./ecosystem.config.js)）でポート **3104**（環境変数 `PORT` で変更可）を待受け、Apache がリバースプロキシします。
+
+## プロジェクト構成
+
+```
+src/
+  app/           # Next.js App Router（ページ・API）
+  auth.ts        # NextAuth 設定
+  components/    # UI コンポーネント
+  lib/           # ビジネスロジック・ユーティリティ
+prisma/          # スキーマ・マイグレーション
+scripts/         # 開発・デプロイ用シェルスクリプト
+public/          # 静的ファイル・PWA アセット
+docs/            # 仕様・進捗ドキュメント
+```
+
+## ドキュメント
+
+| ファイル | 内容 |
+|----------|------|
+| [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) | 仕様書に対する実装進捗（正本） |
+| [`AGENTS.md`](./AGENTS.md) | AI Agent 向け開発ガイド |
+| [`.env.example`](./.env.example) | 環境変数フィールド一覧 |
+| [`.env.op.example`](./.env.op.example) | 1Password CLI 設定テンプレート |
+
+## ライセンス
+
+Private — 個人利用向けプロジェクトです。

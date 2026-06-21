@@ -235,6 +235,18 @@ function parseVehicleForm(formData: FormData) {
   return { data } as const;
 }
 
+function revalidateVehiclePaths(vehicleId?: string) {
+  revalidatePath("/vehicles");
+  revalidatePath("/");
+  revalidatePath("/fuel");
+  revalidatePath("/fuel/new");
+
+  if (vehicleId) {
+    revalidatePath(`/vehicles/${vehicleId}`);
+    revalidatePath(`/vehicles/${vehicleId}/edit`);
+  }
+}
+
 export async function createVehicleAction(
   _prevState: VehicleActionState,
   formData: FormData,
@@ -248,8 +260,7 @@ export async function createVehicleAction(
     }
 
     await createVehicle(userId, parsed.data);
-    revalidatePath("/vehicles");
-    revalidatePath("/");
+    revalidateVehiclePaths();
 
     return { ok: true };
   } catch {
@@ -276,9 +287,7 @@ export async function updateVehicleAction(
       return { ok: false, error: "車両が見つかりません" };
     }
 
-    revalidatePath("/vehicles");
-    revalidatePath(`/vehicles/${vehicleId}`);
-    revalidatePath("/");
+    revalidateVehiclePaths(vehicleId);
 
     redirect(`/vehicles/${vehicleId}`);
   } catch (error) {
@@ -310,8 +319,7 @@ export async function deleteVehicleAction(
       return { ok: false, error: "車両が見つかりません" };
     }
 
-    revalidatePath("/vehicles");
-    revalidatePath("/");
+    revalidateVehiclePaths(vehicleId);
 
     return { ok: true };
   } catch {

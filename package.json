@@ -1,6 +1,6 @@
 {
   "name": "car",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "engines": {
     "node": ">=20.19.0"
@@ -16,7 +16,7 @@
     "env:init": "cp -n .env.op.example .env.op && echo 'Created .env.op — edit op:// paths, then run: op signin && npm run dev'",
     "env:check": "bash scripts/with-op-env.sh bash scripts/env-check.sh",
     "db:generate": "prisma generate",
-    "db:check": "bash scripts/with-op-env.sh npx tsx scripts/db-check.ts",
+    "db:check": "bash scripts/with-op-env.sh bash scripts/tsx.sh scripts/db-check.ts",
     "db:setup": "bash scripts/setup-db.sh",
     "db:migrate": "bash scripts/with-op-env.sh prisma migrate deploy",
     "db:migrate:dev": "bash scripts/with-op-env.sh prisma migrate dev",
@@ -24,10 +24,10 @@
     "db:migrate:resolve": "bash scripts/with-op-env.sh prisma migrate resolve",
     "db:deploy": "bash scripts/with-op-env.sh prisma migrate deploy",
     "db:studio": "bash scripts/with-op-env.sh prisma studio",
-    "db:check:prod": "bash scripts/with-op-prod-db.sh npx tsx scripts/db-check.ts",
+    "db:check:prod": "bash scripts/with-op-prod-db.sh bash scripts/tsx.sh scripts/db-check.ts",
     "db:studio:prod": "bash scripts/with-op-prod-db.sh prisma studio",
     "db:tunnel:prod": "bash scripts/prod-db-tunnel.sh",
-    "db:check:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh npx tsx scripts/db-check.ts",
+    "db:check:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh bash scripts/tsx.sh scripts/db-check.ts",
     "db:studio:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh prisma studio",
     "dev:prod-db": "bash scripts/dev-prod-db.sh",
     "dev:prod-db:tunnel": "DB_TUNNEL=true bash scripts/dev-prod-db.sh"

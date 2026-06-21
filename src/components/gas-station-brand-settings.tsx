@@ -208,7 +208,7 @@ function BrandRow({
   const [editing, setEditing] = useState(false);
   const boundUpdate = updateGasStationBrandAction.bind(null, brand.id);
   const [updateState, updateAction, updatePending] = useActionState(
-    async (prev, formData) => {
+    async (prev: SettingsActionState, formData: FormData) => {
       const result = await boundUpdate(prev, formData);
       if (result.ok) {
         setEditing(false);

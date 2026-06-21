@@ -70,7 +70,7 @@ function StationRow({
   const [editing, setEditing] = useState(false);
   const boundUpdate = updateRegisteredGasStationAction.bind(null, station.id);
   const [updateState, updateAction, updatePending] = useActionState(
-    async (prev, formData) => {
+    async (prev: SettingsActionState, formData: FormData) => {
       const result = await boundUpdate(prev, formData);
       if (result.ok) {
         setEditing(false);

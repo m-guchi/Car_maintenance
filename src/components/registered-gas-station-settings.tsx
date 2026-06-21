@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 
 import {
   deleteRegisteredGasStationAction,
@@ -67,12 +67,19 @@ function StationRow({
 }) {
   const router = useRouter();
   const defaults = getRegisteredStationEditDefaults(station, gasStationBrands);
+  const [editing, setEditing] = useState(false);
   const boundUpdate = updateRegisteredGasStationAction.bind(null, station.id);
   const [updateState, updateAction, updatePending] = useActionState(
-    boundUpdate,
+    async (prev, formData) => {
+      const result = await boundUpdate(prev, formData);
+      if (result.ok) {
+        setEditing(false);
+        router.refresh();
+      }
+      return result;
+    },
     initialState,
   );
-  const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -80,13 +87,6 @@ function StationRow({
   const [hiddenError, setHiddenError] = useState<string | null>(null);
   const [hiddenFromPicker, setHiddenFromPicker] = useState(station.hiddenFromPicker);
   const [brandSelect, setBrandSelect] = useState(defaults.brandSelect);
-
-  useEffect(() => {
-    if (updateState.ok) {
-      setEditing(false);
-      router.refresh();
-    }
-  }, [updateState.ok, router]);
 
   async function handleHiddenChange(nextHidden: boolean) {
     setHiddenPending(true);

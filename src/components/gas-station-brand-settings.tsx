@@ -205,25 +205,25 @@ function BrandRow({
   orderNumber: number;
 }) {
   const router = useRouter();
+  const [editing, setEditing] = useState(false);
   const boundUpdate = updateGasStationBrandAction.bind(null, brand.id);
   const [updateState, updateAction, updatePending] = useActionState(
-    boundUpdate,
+    async (prev, formData) => {
+      const result = await boundUpdate(prev, formData);
+      if (result.ok) {
+        setEditing(false);
+        router.refresh();
+      }
+      return result;
+    },
     initialState,
   );
-  const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const isOther = brand.name === OTHER_GAS_STATION_BRAND_NAME;
   const canMoveUp = !isOther && sortableIndex > 0;
   const canMoveDown = !isOther && sortableIndex >= 0 && sortableIndex < sortableCount - 1;
-
-  useEffect(() => {
-    if (updateState.ok) {
-      setEditing(false);
-      router.refresh();
-    }
-  }, [updateState.ok, router]);
 
   function handleDeleteClick() {
     setDeleteError(null);

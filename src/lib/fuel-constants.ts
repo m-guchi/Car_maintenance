@@ -1,0 +1,11 @@
+export const MAX_DISTANCE_KM = 3_000;
+export const MIN_DISTANCE_KM = 0.01;
+export const MAX_ODOMETER = 9_999_999;
+
+export const MAX_FUEL_AMOUNT = 999.99;
+export const MAX_PRICE_PER_LITER = 999;
+export const MAX_TOTAL_COST = 999_999;
+export const MAX_GAS_STATION_NAME_LENGTH = 100;
+export const MAX_GAS_STATION_STORE_NAME_LENGTH = 80;
+export const MAX_CUSTOM_GAS_STATION_BRAND_LENGTH = 30;
+export const MAX_GAS_STATION_BRAND_KEYWORDS_LENGTH = 200;

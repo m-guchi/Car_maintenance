@@ -19,7 +19,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@prisma/client": ["./generated/client"],
+      "@prisma/client/*": ["./generated/client/*"]
     }
   },
   "include": [

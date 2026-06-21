@@ -3,19 +3,26 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUserId } from "@/lib/auth-user";
+import { OTHER_GAS_STATION_BRAND_NAME } from "@/lib/gas-station-brand-types";
 import {
-  GAS_STATION_BRAND_VALUES,
+  ensureGasStationBrandsForUser,
+} from "@/lib/gas-station-brands";
+import {
+  MAX_CUSTOM_GAS_STATION_BRAND_LENGTH,
   MAX_DISTANCE_KM,
   MAX_FUEL_AMOUNT,
   MAX_GAS_STATION_NAME_LENGTH,
+  MAX_GAS_STATION_STORE_NAME_LENGTH,
   MAX_ODOMETER,
   MAX_PRICE_PER_LITER,
   MAX_TOTAL_COST,
   MIN_DISTANCE_KM,
 } from "@/lib/fuel-constants";
+import { composeGasStationRegistrationName } from "@/lib/gas-stations";
 import {
   createFuelLog,
   deleteFuelLog,
+  deleteFuelLogs,
   updateFuelLog,
   type FuelLogInput,
 } from "@/lib/fuel-logs";
@@ -26,26 +33,6 @@ export type FuelActionState = {
   error?: string;
   resetToken?: number;
 };
-
-function parseOptionalText(
-  value: FormDataEntryValue | null,
-  fieldLabel: string,
-  maxLength: number,
-) {
-  const text = String(value ?? "").trim();
-
-  if (!text) {
-    return { value: null } as const;
-  }
-
-  if (text.length > maxLength) {
-    return {
-      error: `${fieldLabel}は${maxLength}文字以内で入力してください`,
-    } as const;
-  }
-
-  return { value: text } as const;
-}
 
 function parseDate(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
@@ -163,21 +150,68 @@ function parseTotalCost(value: FormDataEntryValue | null) {
   return { value: parsed } as const;
 }
 
-function parseGasStationBrand(value: FormDataEntryValue | null) {
+function parseRequiredText(
+  value: FormDataEntryValue | null,
+  fieldLabel: string,
+  maxLength: number,
+) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return { error: `${fieldLabel}を入力してください` } as const;
+  }
+
+  if (text.length > maxLength) {
+    return {
+      error: `${fieldLabel}は${maxLength}文字以内で入力してください`,
+    } as const;
+  }
+
+  return { value: text } as const;
+}
+
+function parseOptionalGasStationOsmId(value: FormDataEntryValue | null) {
   const text = String(value ?? "").trim();
 
   if (!text) {
     return { value: null } as const;
   }
 
-  if (!(GAS_STATION_BRAND_VALUES as readonly string[]).includes(text)) {
-    return { error: "ガソリンスタンドブランドの値が正しくありません" } as const;
+  if (!/^\d+$/.test(text)) {
+    return { value: null } as const;
   }
 
   return { value: text } as const;
 }
 
-function parseFuelForm(formData: FormData) {
+function parseGasStationBrandFromForm(
+  formData: FormData,
+  brandNames: string[],
+) {
+  const selected = String(formData.get("gasStationBrands") ?? "").trim();
+
+  if (!selected) {
+    return { error: "ブランドを選択してください" } as const;
+  }
+
+  if (!brandNames.includes(selected)) {
+    return { error: "ガソリンスタンドブランドの値が正しくありません" } as const;
+  }
+
+  if (selected === OTHER_GAS_STATION_BRAND_NAME) {
+    return parseRequiredText(
+      formData.get("gasStationBrandOther"),
+      "ブランド名",
+      MAX_CUSTOM_GAS_STATION_BRAND_LENGTH,
+    );
+  }
+
+  return { value: selected } as const;
+}
+
+async function parseFuelForm(userId: string, formData: FormData) {
+  const brands = await ensureGasStationBrandsForUser(userId);
+  const brandNames = brands.map((brand) => brand.name);
   const date = parseDate(formData.get("date"));
   if ("error" in date) {
     return { error: date.error } as const;
@@ -208,18 +242,36 @@ function parseFuelForm(formData: FormData) {
     return { error: totalCost.error } as const;
   }
 
-  const gasStationName = parseOptionalText(
-    formData.get("gasStationName"),
-    "スタンド名",
-    MAX_GAS_STATION_NAME_LENGTH,
-  );
-  if ("error" in gasStationName) {
-    return { error: gasStationName.error } as const;
+  const gasStationBrand = parseGasStationBrandFromForm(formData, brandNames);
+  if ("error" in gasStationBrand) {
+    return { error: gasStationBrand.error } as const;
   }
 
-  const gasStationBrands = parseGasStationBrand(formData.get("gasStationBrands"));
-  if ("error" in gasStationBrands) {
-    return { error: gasStationBrands.error } as const;
+  const gasStationStoreName = parseRequiredText(
+    formData.get("gasStationStoreName"),
+    "店舗名",
+    MAX_GAS_STATION_STORE_NAME_LENGTH,
+  );
+  if ("error" in gasStationStoreName) {
+    return { error: gasStationStoreName.error } as const;
+  }
+
+  const composedGasStationName = composeGasStationRegistrationName(
+    gasStationBrand.value,
+    gasStationStoreName.value,
+  );
+
+  if (composedGasStationName.length > MAX_GAS_STATION_NAME_LENGTH) {
+    return {
+      error: `登録名は${MAX_GAS_STATION_NAME_LENGTH}文字以内にしてください`,
+    } as const;
+  }
+
+  const gasStationOsmId = parseOptionalGasStationOsmId(
+    formData.get("gasStationOsmId"),
+  );
+  if ("error" in gasStationOsmId) {
+    return { error: gasStationOsmId.error } as const;
   }
 
   const data: FuelLogInput = {
@@ -230,8 +282,9 @@ function parseFuelForm(formData: FormData) {
     pricePerLiter: pricePerLiter.value,
     totalCost: totalCost.value,
     isFull: formData.get("isFull") === "on",
-    gasStationName: gasStationName.value,
-    gasStationBrands: gasStationBrands.value,
+    gasStationName: composedGasStationName,
+    gasStationBrands: gasStationBrand.value,
+    gasStationOsmId: gasStationOsmId.value,
   };
 
   return { data } as const;
@@ -260,7 +313,7 @@ export async function createFuelLogAction(
       return { ok: false, error: vehicleResult.error };
     }
 
-    const parsed = parseFuelForm(formData);
+    const parsed = await parseFuelForm(userId, formData);
 
     if ("error" in parsed) {
       return { ok: false, error: parsed.error };
@@ -273,6 +326,7 @@ export async function createFuelLogAction(
     }
 
     revalidatePath("/fuel");
+    revalidatePath("/fuel/new");
     revalidatePath("/");
 
     return { ok: true, resetToken: Date.now() };
@@ -288,7 +342,7 @@ export async function updateFuelLogAction(
 ): Promise<FuelActionState> {
   try {
     const userId = await requireUserId();
-    const parsed = parseFuelForm(formData);
+    const parsed = await parseFuelForm(userId, formData);
 
     if ("error" in parsed) {
       return { ok: false, error: parsed.error };
@@ -301,6 +355,7 @@ export async function updateFuelLogAction(
     }
 
     revalidatePath("/fuel");
+    revalidatePath("/fuel/new");
     revalidatePath("/");
 
     return { ok: true, resetToken: Date.now() };
@@ -321,6 +376,33 @@ export async function deleteFuelLogAction(
     }
 
     revalidatePath("/fuel");
+    revalidatePath("/fuel/new");
+    revalidatePath("/");
+
+    return { ok: true, resetToken: Date.now() };
+  } catch {
+    return { ok: false, error: "給油記録の削除に失敗しました" };
+  }
+}
+
+export async function deleteFuelLogsAction(
+  fuelLogIds: string[],
+): Promise<FuelActionState> {
+  try {
+    const userId = await requireUserId();
+
+    if (!Array.isArray(fuelLogIds) || fuelLogIds.length === 0) {
+      return { ok: false, error: "削除する記録を選択してください" };
+    }
+
+    const deletedCount = await deleteFuelLogs(userId, fuelLogIds);
+
+    if (deletedCount === 0) {
+      return { ok: false, error: "給油記録が見つかりません" };
+    }
+
+    revalidatePath("/fuel");
+    revalidatePath("/fuel/new");
     revalidatePath("/");
 
     return { ok: true, resetToken: Date.now() };

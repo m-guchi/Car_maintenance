@@ -52,8 +52,10 @@ export const menuItems: MenuItem[] = [
   },
   {
     title: "設定",
-    desc: "カテゴリ・パスキー管理",
+    desc: "ブランド・パスキー管理",
     emoji: "⚙️",
+    href: "/settings",
+    ready: true,
     accent:
       "border-l-slate-300 bg-slate-50/50 dark:border-l-slate-500 dark:bg-slate-800/50",
     iconBg: "bg-slate-100 dark:bg-slate-700",

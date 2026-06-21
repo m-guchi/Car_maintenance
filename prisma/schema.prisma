@@ -21,6 +21,7 @@ model User {
   authenticators        Authenticator[]
   vehicles              Vehicle[]
   maintenanceCategories MaintenanceCategory[]
+  gasStationBrands      GasStationBrand[]
 
   @@map("users")
 }
@@ -141,6 +142,22 @@ model MaintenanceCategory {
   @@map("maintenance_categories")
 }
 
+model GasStationBrand {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  name          String
+  matchKeywords String?  @map("match_keywords") @db.Text
+  displayOrder  Int      @default(0) @map("display_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId, displayOrder])
+  @@map("gas_station_brands")
+}
+
 model MaintenanceLog {
   id         String   @id @default(cuid())
   vehicleId  String   @map("vehicle_id")
@@ -170,6 +187,7 @@ model FuelLog {
   isFull           Boolean  @default(false) @map("is_full")
   gasStationName   String?  @map("gas_station_name")
   gasStationBrands String?  @map("gas_station_brands")
+  gasStationOsmId  String?  @map("gas_station_osm_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

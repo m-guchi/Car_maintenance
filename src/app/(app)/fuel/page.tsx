@@ -9,6 +9,7 @@ import {
   getFuelDashboardForVehicle,
   listFuelLogsForVehicle,
 } from "@/lib/fuel-logs";
+import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
 import { serializeFuelLogsForClient } from "@/lib/fuel-types";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { getActiveVehicle } from "@/lib/vehicles";
@@ -32,6 +33,10 @@ export default async function FuelPage() {
     userId && activeVehicle
       ? await getFuelDashboardForVehicle(userId, activeVehicle.id)
       : null;
+
+  const gasStationBrands = userId
+    ? await ensureGasStationBrandsForUser(userId)
+    : [];
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -85,6 +90,7 @@ export default async function FuelPage() {
               <FuelList
                 fuelLogs={clientFuelLogs}
                 vehicleInitialOdometer={activeVehicle.initialOdometer}
+                gasStationBrands={gasStationBrands}
               />
             )}
           </>

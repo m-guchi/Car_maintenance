@@ -13,8 +13,9 @@ export type FuelLogInput = {
   pricePerLiter: number;
   totalCost: number;
   isFull: boolean;
-  gasStationName?: string | null;
-  gasStationBrands?: string | null;
+  gasStationName: string;
+  gasStationBrands: string;
+  gasStationOsmId?: string | null;
 };
 
 function buildFuelLogData(input: FuelLogInput) {
@@ -26,8 +27,9 @@ function buildFuelLogData(input: FuelLogInput) {
     pricePerLiter: input.pricePerLiter,
     totalCost: input.totalCost,
     isFull: input.isFull,
-    gasStationName: input.gasStationName || null,
-    gasStationBrands: input.gasStationBrands || null,
+    gasStationName: input.gasStationName,
+    gasStationBrands: input.gasStationBrands,
+    gasStationOsmId: input.gasStationOsmId ?? null,
   };
 }
 
@@ -101,6 +103,23 @@ export async function deleteFuelLog(userId: string, fuelLogId: string) {
   });
 
   return true;
+}
+
+export async function deleteFuelLogs(userId: string, fuelLogIds: string[]) {
+  if (fuelLogIds.length === 0) {
+    return 0;
+  }
+
+  const uniqueIds = [...new Set(fuelLogIds)];
+
+  const result = await prisma.fuelLog.deleteMany({
+    where: {
+      id: { in: uniqueIds },
+      vehicle: { userId },
+    },
+  });
+
+  return result.count;
 }
 
 export async function getFuelDashboardForVehicle(

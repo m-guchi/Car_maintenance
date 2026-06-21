@@ -1,5 +1,7 @@
 import type { FuelLog } from "@prisma/client";
 
+import type { KnownGasStation } from "@/lib/gas-stations";
+
 export type FuelLogRecord = FuelLog;
 
 export type FuelLogClientRecord = Omit<
@@ -59,6 +61,31 @@ export function calculateOdometerFromDistance(
   }
 
   return String(Math.round(previousOdometer + distance));
+}
+
+export function buildKnownGasStationsFromLogs(
+  logs: Pick<
+    FuelLogClientRecord,
+    "gasStationOsmId" | "gasStationName" | "gasStationBrands" | "date"
+  >[],
+): KnownGasStation[] {
+  const knownByOsmId = new Map<string, KnownGasStation>();
+
+  for (const log of logs) {
+    if (log.gasStationOsmId == null || !log.gasStationName) {
+      continue;
+    }
+
+    if (!knownByOsmId.has(log.gasStationOsmId)) {
+      knownByOsmId.set(log.gasStationOsmId, {
+        osmId: log.gasStationOsmId,
+        registeredName: log.gasStationName,
+        brand: log.gasStationBrands,
+      });
+    }
+  }
+
+  return Array.from(knownByOsmId.values());
 }
 
 function getInitialOdometerState(

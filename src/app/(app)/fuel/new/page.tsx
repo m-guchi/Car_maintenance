@@ -7,6 +7,7 @@ import { FuelForm } from "@/components/fuel-form";
 import {
   listFuelLogsForVehicle,
 } from "@/lib/fuel-logs";
+import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
 import {
   getPreviousOdometer,
   buildKnownGasStationsFromLogs,
@@ -37,6 +38,10 @@ export default async function FuelNewPage() {
 
   const knownGasStations = clientFuelLogs
     ? buildKnownGasStationsFromLogs(clientFuelLogs)
+    : [];
+
+  const gasStationBrands = userId
+    ? await ensureGasStationBrandsForUser(userId)
     : [];
 
   return (
@@ -78,6 +83,7 @@ export default async function FuelNewPage() {
             vehicleId={activeVehicle.id}
             previousOdometer={previousOdometer}
             knownGasStations={knownGasStations}
+            gasStationBrands={gasStationBrands}
           />
         )}
       </AppPage>

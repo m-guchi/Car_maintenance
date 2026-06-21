@@ -1,8 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useCallback, useState } from "react";
 
-import { GAS_STATION_BRAND_OPTIONS } from "@/lib/fuel-constants";
+import { GasStationMapPicker } from "@/components/gas-station-map-picker";
+import {
+  MAX_CUSTOM_GAS_STATION_BRAND_LENGTH,
+  MAX_GAS_STATION_STORE_NAME_LENGTH,
+} from "@/lib/fuel-constants";
+import {
+  OTHER_GAS_STATION_BRAND_NAME,
+  type GasStationBrandRecord,
+} from "@/lib/gas-station-brand-types";
+import {
+  composeGasStationRegistrationName,
+  extractStoreNamePart,
+  resolveBrandFormState,
+  type KnownGasStation,
+} from "@/lib/gas-stations";
 import {
   calculateOdometerFromDistance,
   getInitialOdometerState,
@@ -19,6 +34,8 @@ type FuelFormFieldsProps = {
   fuelLog?: FuelLogClientRecord;
   idPrefix?: string;
   previousOdometer?: number | null;
+  knownGasStations?: KnownGasStation[];
+  gasStationBrands: GasStationBrandRecord[];
 };
 
 function calculateTotalCost(fuelAmount: string, pricePerLiter: string): string {
@@ -55,6 +72,8 @@ export function FuelFormFields({
   fuelLog,
   idPrefix = "fuel",
   previousOdometer = null,
+  knownGasStations = [],
+  gasStationBrands,
 }: FuelFormFieldsProps) {
   const initialOdometerState = getInitialOdometerState(fuelLog, previousOdometer);
   const [fuelAmount, setFuelAmount] = useState(
@@ -77,6 +96,34 @@ export function FuelFormFields({
     initialOdometerState.odometerManuallySet,
   );
   const [odometerEditing, setOdometerEditing] = useState(false);
+  const initialBrandState = resolveBrandFormState(
+    fuelLog?.gasStationBrands,
+    gasStationBrands,
+  );
+  const [brandSelect, setBrandSelect] = useState(initialBrandState.brandSelect);
+  const [customBrand, setCustomBrand] = useState(initialBrandState.customBrand);
+  const [storeName, setStoreName] = useState(
+    fuelLog?.gasStationName
+      ? extractStoreNamePart(
+          fuelLog.gasStationName,
+          initialBrandState.effectiveBrand,
+          gasStationBrands,
+        )
+      : "",
+  );
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(
+    fuelLog?.gasStationOsmId ?? null,
+  );
+  const [mapStationName, setMapStationName] = useState("");
+
+  const effectiveBrand =
+    brandSelect === OTHER_GAS_STATION_BRAND_NAME
+      ? customBrand.trim()
+      : brandSelect.trim();
+  const registrationName = composeGasStationRegistrationName(
+    effectiveBrand,
+    storeName,
+  );
   const autoTotalCost = calculateTotalCost(fuelAmount, pricePerLiter);
   const totalCost = totalCostEdited ? manualTotalCost : autoTotalCost;
   const autoOdometer = calculateOdometerFromDistance(distanceKm, previousOdometer);
@@ -100,6 +147,32 @@ export function FuelFormFields({
   function handleManualOdometerChange(value: string) {
     setManualOdometer(value);
     setOdometerManuallySet(true);
+  }
+
+  const handleSelectStation = useCallback(
+    (station: {
+      id: string;
+      mapName: string;
+      brandSelect: string;
+      customBrand: string;
+      storeName: string;
+      registrationName: string;
+    }) => {
+      setSelectedStationId(station.id);
+      setMapStationName(station.mapName);
+      setBrandSelect(station.brandSelect);
+      setCustomBrand(station.customBrand);
+      setStoreName(station.storeName);
+    },
+    [],
+  );
+
+  function handleBrandSelectChange(value: string) {
+    setBrandSelect(value);
+
+    if (value !== OTHER_GAS_STATION_BRAND_NAME) {
+      setCustomBrand("");
+    }
   }
 
   return (
@@ -129,6 +202,7 @@ export function FuelFormFields({
             id={`${idPrefix}-distance`}
             name="distanceKm"
             type="number"
+            inputMode="decimal"
             required
             min={0.01}
             max={3000}
@@ -148,7 +222,7 @@ export function FuelFormFields({
             <button
               type="button"
               onClick={handleToggleOdometerEdit}
-              className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium transition ${
+              className={`inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-xs font-medium transition active:scale-[0.97] ${
                 odometerEditing
                   ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200"
                   : "text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
@@ -164,6 +238,7 @@ export function FuelFormFields({
             id={`${idPrefix}-odometer`}
             name="odometer"
             type="number"
+            inputMode="numeric"
             min={1}
             max={9_999_999}
             step={1}
@@ -195,6 +270,7 @@ export function FuelFormFields({
             id={`${idPrefix}-fuel-amount`}
             name="fuelAmount"
             type="number"
+            inputMode="decimal"
             required
             min={0.01}
             max={999.99}
@@ -214,6 +290,7 @@ export function FuelFormFields({
             id={`${idPrefix}-price`}
             name="pricePerLiter"
             type="number"
+            inputMode="numeric"
             required
             min={1}
             max={999}
@@ -233,6 +310,7 @@ export function FuelFormFields({
             id={`${idPrefix}-total-cost`}
             name="totalCost"
             type="number"
+            inputMode="numeric"
             required
             min={1}
             max={999_999}
@@ -258,47 +336,109 @@ export function FuelFormFields({
         満タン給油（燃費計算に使用）
       </label>
 
-      <fieldset className="space-y-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-800/50 dark:bg-amber-950/20">
-        <legend className="px-1 text-sm font-medium text-amber-900 dark:text-amber-200">
-          スタンド情報（任意）
-        </legend>
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-sm font-medium text-slate-900 dark:text-slate-100">
+            スタンド情報 <span className="text-red-500">*</span>
+          </h3>
+          <p className="mt-1 text-xs text-slate-500">
+            地図から店舗を選び、登録する店舗名を確認・編集してください。ブランドは
+            <Link href="/settings" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
+              設定
+            </Link>
+            で管理できます。
+          </p>
+        </div>
+
+        <GasStationMapPicker
+          selectedStationId={selectedStationId}
+          gasStationBrands={gasStationBrands}
+          knownStations={knownGasStations}
+          onSelectStation={handleSelectStation}
+        />
+
+        <input
+          type="hidden"
+          name="gasStationOsmId"
+          value={selectedStationId ?? ""}
+        />
+        <input type="hidden" name="gasStationName" value={registrationName} />
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor={`${idPrefix}-brand`} className={labelClassName}>
-              ブランド
-            </label>
-            <select
-              id={`${idPrefix}-brand`}
-              name="gasStationBrands"
-              defaultValue={fuelLog?.gasStationBrands ?? ""}
-              className={inputClassName}
-            >
-              <option value="">選択しない</option>
-              {GAS_STATION_BRAND_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+          <div className="space-y-4">
+            <div>
+              <label htmlFor={`${idPrefix}-brand`} className={labelClassName}>
+                ブランド <span className="text-red-500">*</span>
+              </label>
+              <select
+                id={`${idPrefix}-brand`}
+                name="gasStationBrands"
+                required
+                value={brandSelect}
+                onChange={(event) => handleBrandSelectChange(event.target.value)}
+                className={inputClassName}
+              >
+                <option value="" disabled>
+                  選択してください
+                </option>
+              {gasStationBrands.map((option) => (
+                <option key={option.id} value={option.name}>
+                  {option.name}
                 </option>
               ))}
-            </select>
+              </select>
+            </div>
+
+            {brandSelect === OTHER_GAS_STATION_BRAND_NAME && (
+              <div>
+                <label htmlFor={`${idPrefix}-custom-brand`} className={labelClassName}>
+                  ブランド名 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id={`${idPrefix}-custom-brand`}
+                  name="gasStationBrandOther"
+                  type="text"
+                  required
+                  maxLength={MAX_CUSTOM_GAS_STATION_BRAND_LENGTH}
+                  value={customBrand}
+                  onChange={(event) => setCustomBrand(event.target.value)}
+                  placeholder="例: ヒューテック"
+                  className={inputClassName}
+                />
+              </div>
+            )}
           </div>
 
           <div>
-            <label htmlFor={`${idPrefix}-station-name`} className={labelClassName}>
-              スタンド名
+            <label htmlFor={`${idPrefix}-store-name`} className={labelClassName}>
+              店舗名 <span className="text-red-500">*</span>
             </label>
             <input
-              id={`${idPrefix}-station-name`}
-              name="gasStationName"
+              id={`${idPrefix}-store-name`}
+              name="gasStationStoreName"
               type="text"
-              maxLength={100}
-              defaultValue={fuelLog?.gasStationName ?? ""}
-              placeholder="例: ENEOS 〇〇店"
+              required
+              maxLength={MAX_GAS_STATION_STORE_NAME_LENGTH}
+              value={storeName}
+              onChange={(event) => setStoreName(event.target.value)}
+              placeholder={
+                selectedStationId != null
+                  ? "例: 寺町通店"
+                  : "地図から選択するか直接入力"
+              }
               className={inputClassName}
             />
+            <p className="mt-1 text-xs text-slate-500">
+              登録名: {registrationName || "（ブランドと店舗名を入力）"}
+            </p>
+            {mapStationName && (
+              <p className="mt-1 text-xs text-slate-500">
+                地図上の名称: {mapStationName}
+              </p>
+            )}
           </div>
         </div>
-      </fieldset>
+      </div>
     </div>
   );
 }

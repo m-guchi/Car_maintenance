@@ -18,14 +18,14 @@ import {
   type GasStation,
   type KnownGasStation,
 } from "@/lib/gas-stations";
-import type { GasStationBrandRecord } from "@/lib/gas-station-brands";
+import type { GasStationBrandRecord } from "@/lib/gas-station-brand-types";
 
 type GasStationMapPickerProps = {
-  selectedStationId: number | null;
+  selectedStationId: string | null;
   gasStationBrands: GasStationBrandRecord[];
   knownStations?: KnownGasStation[];
   onSelectStation: (station: {
-    id: number;
+    id: string;
     mapName: string;
     brandSelect: string;
     customBrand: string;
@@ -60,12 +60,16 @@ function buildKnownStationMap(knownStations: KnownGasStation[]) {
   return new Map(knownStations.map((station) => [station.osmId, station]));
 }
 
+function toOsmId(id: number): string {
+  return String(id);
+}
+
 function getStationDisplayInfo(
   station: GasStation,
-  knownByOsmId: Map<number, KnownGasStation>,
+  knownByOsmId: Map<string, KnownGasStation>,
   brands: GasStationBrandRecord[],
 ) {
-  const known = knownByOsmId.get(station.id);
+  const known = knownByOsmId.get(toOsmId(station.id));
   const rawBrand = known?.brand ?? station.brand;
   const matchedBrand = matchGasStationBrand(rawBrand, brands);
   const selection = buildStationSelectionFromMap(
@@ -113,7 +117,7 @@ export function GasStationMapPicker({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const centerMarkerRef = useRef<LeafletMarker | null>(null);
-  const stationMarkersRef = useRef<Map<number, LeafletMarker>>(new Map());
+  const stationMarkersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
 
   const [stations, setStations] = useState<GasStation[]>([]);
@@ -363,7 +367,7 @@ export function GasStationMapPicker({
         marker.openPopup();
         const selected = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
         onSelectStation({
-          id: station.id,
+          id: toOsmId(station.id),
           mapName: selected.mapName,
           brandSelect: selected.brandSelect,
           customBrand: selected.customBrand,
@@ -372,7 +376,7 @@ export function GasStationMapPicker({
         });
       });
 
-      stationMarkersRef.current.set(station.id, marker);
+      stationMarkersRef.current.set(toOsmId(station.id), marker);
     }
 
     if (stations.length > 0 && shouldFitBoundsRef.current) {
@@ -393,13 +397,13 @@ export function GasStationMapPicker({
     }
 
     for (const station of stations) {
-      const marker = stationMarkersRef.current.get(station.id);
+      const marker = stationMarkersRef.current.get(toOsmId(station.id));
 
       if (!marker) {
         continue;
       }
 
-      const isSelected = station.id === selectedStationId;
+      const isSelected = toOsmId(station.id) === selectedStationId;
       const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
 
       marker.setIcon(
@@ -417,7 +421,7 @@ export function GasStationMapPicker({
   function handleSelectFromList(station: GasStation) {
     const info = getStationDisplayInfo(station, knownByOsmId, gasStationBrands);
     onSelectStation({
-      id: station.id,
+      id: toOsmId(station.id),
       mapName: info.mapName,
       brandSelect: info.brandSelect,
       customBrand: info.customBrand,
@@ -533,7 +537,7 @@ export function GasStationMapPicker({
 
           <ul className="max-h-48 space-y-2 overflow-y-auto">
             {stations.map((station) => {
-              const isSelected = station.id === selectedStationId;
+              const isSelected = toOsmId(station.id) === selectedStationId;
               const { registrationName, mapName, isKnown } = getStationDisplayInfo(
                 station,
                 knownByOsmId,

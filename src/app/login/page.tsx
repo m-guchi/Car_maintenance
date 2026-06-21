@@ -1,13 +1,30 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { signIn as signInWebAuthn } from "next-auth/webauthn";
 import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+
+  async function handlePasskeyLogin() {
+    setPasskeyLoading(true);
+    setPasskeyError(null);
+
+    try {
+      await signInWebAuthn("passkey", { callbackUrl });
+    } catch {
+      setPasskeyError(
+        "パスキーでのログインに失敗しました。初回は Google でログインし、パスキーを登録してください。",
+      );
+      setPasskeyLoading(false);
+    }
+  }
 
   return (
     <div className="flex min-h-full flex-1 flex-col items-center justify-center px-4 py-12">
@@ -22,11 +39,12 @@ function LoginForm() {
           </p>
         </div>
 
-        {error && (
+        {(error || passkeyError) && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error === "AccessDenied"
-              ? "許可されていないアカウントです。管理者に連絡してください。"
-              : "ログインに失敗しました。もう一度お試しください。"}
+            {passkeyError ??
+              (error === "AccessDenied"
+                ? "許可されていないアカウントです。管理者に連絡してください。"
+                : "ログインに失敗しました。もう一度お試しください。")}
           </div>
         )}
 
@@ -59,11 +77,12 @@ function LoginForm() {
 
           <button
             type="button"
-            onClick={() => signIn("passkey", { callbackUrl })}
-            className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98]"
+            onClick={handlePasskeyLogin}
+            disabled={passkeyLoading}
+            className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span aria-hidden="true">🔐</span>
-            パスキー（顔認証）でログイン
+            {passkeyLoading ? "認証中..." : "パスキー（顔認証）でログイン"}
           </button>
         </div>
 

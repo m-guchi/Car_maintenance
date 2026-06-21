@@ -1,8 +1,12 @@
 import { auth } from "@/auth";
+import { PasskeyRegisterCard } from "@/components/passkey-register-card";
 import { SignOutButton } from "@/components/sign-out-button";
+import { hasRegisteredPasskeys } from "@/lib/passkey";
 
 export default async function HomePage() {
   const session = await auth();
+  const email = session?.user?.email;
+  const hasPasskey = email ? await hasRegisteredPasskeys(email) : false;
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -19,6 +23,12 @@ export default async function HomePage() {
       </header>
 
       <div className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">
+        {email && (
+          <div className="mb-6">
+            <PasskeyRegisterCard hasPasskey={hasPasskey} />
+          </div>
+        )}
+
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">
             ようこそ

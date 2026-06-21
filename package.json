@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "bash scripts/dev.sh",
     "build": "bash scripts/with-op-env.sh sh -c 'prisma generate && next build'",
+    "build:ci": "prisma generate && next build",
     "start": "bash scripts/with-op-env.sh next start",
+    "start:prod": "NODE_ENV=production next start",
     "lint": "eslint",
     "postinstall": "prisma generate",
     "env:init": "cp -n .env.op.example .env.op && echo 'Created .env.op — edit op:// paths, then run: op signin && npm run dev'",

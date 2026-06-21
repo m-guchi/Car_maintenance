@@ -29,7 +29,7 @@
 | PWA 雛形 | ⚠️ |
 | 給油 UI | ✅ |
 | メンテ・車両 UI | ⚠️ |
-| 本番 VPS / CI/CD 運用 | ❌ |
+| 本番 VPS / CI/CD 運用 | ⚠️ |
 
 ---
 
@@ -47,8 +47,8 @@
 | WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + Google ログイン後の登録導線 (`passkey-register-card.tsx`) |
 | Discord Webhook（signup / login 2系統） | ✅ | `src/lib/discord.ts`, `src/auth.ts` events |
 | PWA | ⚠️ | `public/manifest.json`, `public/sw.js`, `public/icons/` |
-| pm2 | ⚠️ | `ecosystem.config.js`（雛形のみ） |
-| GitHub Actions → VPS SSH デプロイ | ⚠️ | `.github/workflows/deploy.yml`（**Secrets・VPS 未設定**） |
+| pm2 | ✅ | `ecosystem.config.js`（本番 PORT 3104 既定） |
+| GitHub Actions → VPS SSH デプロイ | ⚠️ | `.github/workflows/deploy.yml`（**1Password・VPS 初回設定後に検証**） |
 
 ### 2.2 データモデル
 
@@ -120,9 +120,10 @@
 |------|------|------|
 | Git ユーザー名 `Cursor AI` | ⚠️ | 機能コミットは `Cursor AI`。Initial commit は別作者 |
 | `develop` で開発 → `main` で安定版 | ✅ | `develop` push 済み (`origin/develop`) |
-| `main` マージ時 GitHub Actions デプロイ | ❌ | workflow 雛形のみ。未実行・未検証 |
+| `main` マージ時 GitHub Actions デプロイ | ⚠️ | workflow 実装済み。1Password / VPS 設定後に `main` push で検証 |
+| `main` マージ時 Git tag / GitHub Release | ⚠️ | `package.json` version から `v*` タグ自動作成 + Release（Portfolio 同様） |
 
-デプロイ手順（workflow 定義）: `git pull` → `npm ci` → `prisma migrate deploy` → `npm run build` → `pm2 reload`
+デプロイ手順（workflow）: tag → release → CI で `npm run build:ci` → tar 転送 → VPS で `.env` 同期 → `prisma migrate deploy` → `pm2 reload`
 
 ### ⑦ 1Password & 機密情報
 
@@ -131,7 +132,7 @@
 | 秘密情報をリポジトリに含めない | ✅ | `.gitignore`, `.env.example` |
 | 1Password CLI 開発注入 | ✅ | `.env.op`, `scripts/with-op-env.sh` |
 | 開発 DB | ✅ | `127.0.0.1:3306` 固定。`npm run db:setup` |
-| 本番 Secrets → GitHub Actions / pm2 | ❌ | 未設定 |
+| 本番 Secrets → GitHub Actions / pm2 | ⚠️ | `.github/deploy.env.tpl` 定義済み。1Password 登録・`OP_SERVICE_ACCOUNT_TOKEN` 要設定 |
 
 ### 環境変数（1Password / 本番）
 
@@ -145,7 +146,9 @@
 | `ALLOWED_EMAIL` | アクセス制限 | ✅ | 要設定 |
 | `DISCORD_WEBHOOK_SIGNUP_URL` | 通知 | ✅ | 要設定 |
 | `DISCORD_WEBHOOK_LOGIN_URL` | 通知 | ✅ | 要設定 |
-| `VPS_*` (GitHub Secrets) | デプロイ | — | ❌ |
+| `TARGET_DIR` (`target-dir`) | VPS デプロイ先パス | — | 1Password `Car Maintenance` |
+| `PORT` (`port`) | 待受ポート | — | 1Password `Car Maintenance` |
+| `OP_SERVICE_ACCOUNT_TOKEN` | GitHub Actions → 1Password | — | 要設定 |
 
 ---
 
@@ -171,7 +174,7 @@ Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/setup-db.sh
 PWA:      public/manifest.json, public/sw.js
-DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
+DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/release.yml, .github/deploy.env.tpl, scripts/construct-database-url.sh, scripts/vps-bootstrap.sh
 進捗正本: docs/SPEC_PROGRESS.md  ← このファイル
 ```
 
@@ -189,8 +192,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 ## 次の推奨タスク（優先順）
 
-1. **メンテ記録 + カテゴリ管理**
-2. **本番デプロイ**（GitHub Secrets, VPS, `main` マージ）
+1. **本番デプロイ初回設定**（1Password `Car Maintenance` 登録、VPS `scripts/vps-bootstrap.sh`、`main` マージ）
+2. **メンテ記録 + カテゴリ管理**
 
 ---
 
@@ -198,6 +201,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | Git tag / GitHub Release workflow 追加（Portfolio 同様、`release.yml` 含む） |
+| 2026-06-21 | GitHub Actions デプロイ環境（build/deploy workflow、1Password 参照、VPS bootstrap） |
 | 2026-06-21 | 給油記録（入力・一覧・燃費ダッシュボード・周辺スタンド検索 `/fuel`） |
 | 2026-06-21 | 車両詳細項目追加（車種名・型式・燃料種別・車検満了日・任意項目） |
 | 2026-06-21 | 車両 CRUD（登録・一覧・編集・削除、`/vehicles`） |

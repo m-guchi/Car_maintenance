@@ -83,14 +83,42 @@ model Authenticator {
 
 // --- Application ---
 
+enum FuelType {
+  REGULAR
+  PREMIUM
+  DIESEL
+  KEROSENE
+  ELECTRIC
+  HYDROGEN
+  OTHER
+}
+
+enum DriveType {
+  FF
+  FR
+  RR
+  MR
+  AWD
+  FOUR_WD
+}
+
 model Vehicle {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  name         String
-  manufacturer String?
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                    String     @id @default(cuid())
+  userId                String     @map("user_id")
+  name                  String
+  manufacturer          String?
+  modelName             String?    @map("model_name")
+  modelCode             String?    @map("model_code")
+  fuelType              FuelType?  @map("fuel_type")
+  inspectionExpiry      DateTime?  @map("inspection_expiry") @db.Date
+  licensePlate          String?    @map("license_plate")
+  firstRegistrationDate DateTime?  @map("first_registration_date") @db.Date
+  initialOdometer       Int?       @map("initial_odometer")
+  displacement          Int?
+  driveType             DriveType? @map("drive_type")
+  isActive              Boolean    @default(true) @map("is_active")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
 
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   maintenanceLogs MaintenanceLog[]

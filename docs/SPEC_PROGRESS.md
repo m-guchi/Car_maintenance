@@ -15,10 +15,10 @@
 
 ## 全体進捗
 
-**約 40%** — 認証・DB スキーマ・Dev 基盤は完了。アプリ本体機能と本番デプロイは未了。
+**約 45%** — 認証・DB スキーマ・車両管理は完了。給油・メンテ UI と本番デプロイは未了。
 
 ```
-[████████████████░░░░░░░░░░░░░░] 40%
+[██████████████████░░░░░░░░░░░░] 45%
 ```
 
 | レイヤー | 状態 |
@@ -27,7 +27,7 @@
 | DB スキーマ（Prisma） | ✅ |
 | 1Password 開発環境 | ✅ |
 | PWA 雛形 | ⚠️ |
-| 給油・メンテ・車両 UI | ❌ |
+| 給油・メンテ・車両 UI | ⚠️ |
 | 本番 VPS / CI/CD 運用 | ❌ |
 
 ---
@@ -58,7 +58,7 @@
 | `sessions` | ✅ | ✅ | 認証のみ |
 | `verification_tokens` | ✅ | ✅ | 認証のみ |
 | `authenticators` | ✅ | ✅ | Passkey 登録・ログイン |
-| `vehicles` | ✅ | ✅ | ❌ |
+| `vehicles` | ✅ | ✅ | ✅ CRUD (`/vehicles`) |
 | `maintenance_categories` | ✅ | ✅ | ❌ |
 | `maintenance_logs` | ✅ | ✅ | ❌ |
 | `fuel_logs` | ✅ | ✅ | ❌ |
@@ -95,7 +95,15 @@
 | カテゴリ CRUD（設定画面） | ❌ |
 | メンテナンス記録入力（カテゴリ dropdown） | ❌ |
 
-### ④ スマートフォン PWA 対応
+### ④ 車両管理
+
+| 要件 | 状態 | 備考 |
+|------|------|------|
+| 車両登録（名前・メーカー・車種名・型式ほか） | ✅ | `/vehicles` フォーム |
+| 車両一覧・編集・削除 | ✅ | `vehicle-list.tsx`, Server Actions |
+| 使用中車両の切り替え（`isActive`） | ✅ | 1台のみアクティブ |
+
+### ⑤ スマートフォン PWA 対応
 
 | 要件 | 状態 | 備考 |
 |------|------|------|
@@ -107,7 +115,7 @@
 
 ## 4. 開発・運用フロー、インフラ
 
-### ⑤ Git & GitHub / CI/CD
+### ⑥ Git & GitHub / CI/CD
 
 | 要件 | 状態 | 備考 |
 |------|------|------|
@@ -117,7 +125,7 @@
 
 デプロイ手順（workflow 定義）: `git pull` → `npm ci` → `prisma migrate deploy` → `npm run build` → `pm2 reload`
 
-### ⑥ 1Password & 機密情報
+### ⑦ 1Password & 機密情報
 
 | 要件 | 状態 | 備考 |
 |------|------|------|
@@ -158,6 +166,7 @@
 
 ```
 認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/lib/passkey.ts
+車両:     src/app/vehicles/, src/components/vehicle-form.tsx, src/components/vehicle-list.tsx, src/lib/vehicles.ts
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/setup-db.sh
@@ -180,7 +189,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 ## 次の推奨タスク（優先順）
 
-1. **車両 CRUD** → **給油記録** → **メンテ記録 + カテゴリ管理**
+1. **給油記録** → **メンテ記録 + カテゴリ管理**
 2. **本番デプロイ**（GitHub Secrets, VPS, `main` マージ）
 
 ---
@@ -189,5 +198,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-21 | 車両詳細項目追加（車種名・型式・燃料種別・車検満了日・任意項目） |
+| 2026-06-21 | 車両 CRUD（登録・一覧・編集・削除、`/vehicles`） |
 | 2026-06-21 | Passkey 初回登録導線・顔認証ログイン実装 |
 | 2026-06-21 | 初版作成（基盤実装完了時点の進捗） |

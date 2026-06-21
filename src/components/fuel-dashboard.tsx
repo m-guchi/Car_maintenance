@@ -2,10 +2,11 @@ import {
   formatCurrency,
   formatDistanceKmValue,
   formatFuelEfficiency,
-  formatPricePerLiter,
 } from "@/lib/fuel-display";
 import type { FuelDashboardStats } from "@/lib/fuel-stats";
 import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
+
+import { FuelPriceTrendChart } from "@/components/fuel-price-trend-chart";
 
 type FuelMileageSummaryProps = {
   totalOdometerKm: number | null;
@@ -102,72 +103,6 @@ function BarChart({
   );
 }
 
-function LineChart({
-  points,
-}: {
-  points: Array<{ date: Date; pricePerLiter: number }>;
-}) {
-  if (points.length === 0) {
-    return (
-      <p className="text-sm text-slate-500">表示するデータがありません</p>
-    );
-  }
-
-  const prices = points.map((point) => point.pricePerLiter);
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const range = Math.max(maxPrice - minPrice, 1);
-  const width = 320;
-  const height = 120;
-  const padding = 12;
-
-  const coordinates = points.map((point, index) => {
-    const x =
-      padding +
-      (index / Math.max(points.length - 1, 1)) * (width - padding * 2);
-    const y =
-      height -
-      padding -
-      ((point.pricePerLiter - minPrice) / range) * (height - padding * 2);
-
-    return { x, y, point };
-  });
-
-  const polyline = coordinates.map((coord) => `${coord.x},${coord.y}`).join(" ");
-
-  return (
-    <div className="overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="h-32 w-full min-w-[280px]"
-        role="img"
-        aria-label="単価推移グラフ"
-      >
-        <polyline
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          className="text-amber-500"
-          points={polyline}
-        />
-        {coordinates.map((coord) => (
-          <circle
-            key={coord.point.date.toISOString()}
-            cx={coord.x}
-            cy={coord.y}
-            r="3.5"
-            className="fill-amber-500"
-          />
-        ))}
-      </svg>
-      <div className="mt-2 flex justify-between text-xs text-slate-500">
-        <span>{formatPricePerLiter(minPrice)}</span>
-        <span>{formatPricePerLiter(maxPrice)}</span>
-      </div>
-    </div>
-  );
-}
-
 export function FuelDashboard({ stats }: FuelDashboardProps) {
   const monthlyChartItems = stats.monthlyCosts.map((item) => ({
     label: item.label,
@@ -242,7 +177,20 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
             単価推移
           </h3>
           <div className="mt-4">
-            <LineChart points={stats.priceTrend} />
+            <FuelPriceTrendChart
+              priceTrend={stats.priceTrend.map((point) => ({
+                date: point.date.toISOString(),
+                pricePerLiter: point.pricePerLiter,
+              }))}
+              priceTrendByStation={stats.priceTrendByStation.map((station) => ({
+                key: station.key,
+                label: station.label,
+                points: station.points.map((point) => ({
+                  date: point.date.toISOString(),
+                  pricePerLiter: point.pricePerLiter,
+                })),
+              }))}
+            />
           </div>
         </div>
       </div>

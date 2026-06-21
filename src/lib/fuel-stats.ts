@@ -22,6 +22,12 @@ export type PriceTrendPoint = {
   pricePerLiter: number;
 };
 
+export type PriceTrendByStation = {
+  key: string;
+  label: string;
+  points: PriceTrendPoint[];
+};
+
 export type FuelDashboardStats = {
   averageEfficiency: number | null;
   latestEfficiency: number | null;
@@ -33,6 +39,7 @@ export type FuelDashboardStats = {
   efficiencyHistory: FuelEfficiencyPoint[];
   monthlyCosts: MonthlyFuelCost[];
   priceTrend: PriceTrendPoint[];
+  priceTrendByStation: PriceTrendByStation[];
 };
 
 type NumericLike = number | FuelLog["distanceKm"] | FuelLog["fuelAmount"];
@@ -45,6 +52,9 @@ type FuelLogLike = {
   pricePerLiter: number;
   totalCost: number;
   isFull: boolean;
+  gasStationName?: string | null;
+  gasStationBrands?: string | null;
+  gasStationOsmId?: string | null;
 };
 
 function toNumber(value: NumericLike): number {
@@ -119,13 +129,92 @@ export function computeMonthlyCosts(logs: FuelLogLike[]): MonthlyFuelCost[] {
     });
 }
 
-export function computePriceTrend(logs: FuelLogLike[]): PriceTrendPoint[] {
-  return sortLogsAsc(logs)
-    .slice(-12)
-    .map((log) => ({
-      date: log.date,
-      pricePerLiter: log.pricePerLiter,
-    }));
+export function getGasStationKey(
+  log: Pick<
+    FuelLogLike,
+    "gasStationName" | "gasStationBrands" | "gasStationOsmId"
+  >,
+): string | null {
+  const osmId = log.gasStationOsmId?.trim();
+  if (osmId) {
+    return `osm:${osmId}`;
+  }
+
+  const name = log.gasStationName?.trim();
+  const brand = log.gasStationBrands?.trim();
+
+  if (!name && !brand) {
+    return null;
+  }
+
+  return `name:${name ?? ""}|brand:${brand ?? ""}`;
+}
+
+export function getGasStationLabel(
+  log: Pick<FuelLogLike, "gasStationName" | "gasStationBrands">,
+): string {
+  const name = log.gasStationName?.trim();
+  const brand = log.gasStationBrands?.trim();
+
+  if (name && brand) {
+    return `${brand} ${name}`;
+  }
+
+  if (name) {
+    return name;
+  }
+
+  if (brand) {
+    return brand;
+  }
+
+  return "店舗未設定";
+}
+
+export function computePriceTrend(
+  logs: FuelLogLike[],
+  limit = 12,
+): PriceTrendPoint[] {
+  const sorted = sortLogsAsc(logs);
+
+  return (limit > 0 ? sorted.slice(-limit) : sorted).map((log) => ({
+    date: log.date,
+    pricePerLiter: log.pricePerLiter,
+  }));
+}
+
+export function computePriceTrendsByStation(
+  logs: FuelLogLike[],
+): PriceTrendByStation[] {
+  const grouped = new Map<string, { label: string; logs: FuelLogLike[] }>();
+
+  for (const log of logs) {
+    const key = getGasStationKey(log);
+
+    if (!key) {
+      continue;
+    }
+
+    const existing = grouped.get(key);
+
+    if (existing) {
+      existing.logs.push(log);
+      continue;
+    }
+
+    grouped.set(key, {
+      label: getGasStationLabel(log),
+      logs: [log],
+    });
+  }
+
+  return [...grouped.entries()]
+    .map(([key, { label, logs: stationLogs }]) => ({
+      key,
+      label,
+      points: computePriceTrend(stationLogs, 0),
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label, "ja"));
 }
 
 export function computeFuelEfficiencyForLog(
@@ -178,5 +267,6 @@ export function computeFuelDashboardStats(
     efficiencyHistory: efficiencyHistory.slice(-6),
     monthlyCosts: computeMonthlyCosts(logs),
     priceTrend: computePriceTrend(logs),
+    priceTrendByStation: computePriceTrendsByStation(logs),
   };
 }

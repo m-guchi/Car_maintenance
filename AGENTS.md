@@ -3,3 +3,37 @@
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
+
+# Car Maintenance — Agent 向けガイド
+
+## 仕様書・進捗
+
+**実装進捗の正本:** [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md)
+
+仕様書（Discord通知機能追加版）に対する完了/未了の一覧、主要ファイル索引、次タスクは上記を参照すること。  
+機能実装・デプロイ完了時は **必ず `docs/SPEC_PROGRESS.md` を更新** すること。
+
+## ブランチ
+
+- 機能開発: `develop`
+- 安定版 / 本番デプロイ: `main`（マージ時に GitHub Actions が VPS へデプロイ）
+
+## 開発起動
+
+```bash
+op signin
+npm run dev
+```
+
+WSL2 では `npm run dev` 起動時に Windows 側のポート転送（3000）を自動更新し、LAN の URL を表示する。表示された `Phone: http://…` をスマホのブラウザで開く（PC と同一 Wi-Fi）。WSL 再起動後の初回は UAC（管理者承認）が求められることがある。
+
+手動でポート転送を設定する場合（管理者 PowerShell）:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/wsl-port-forward.ps1
+```
+
+- Google ログイン: OAuth クライアントに `http://<LAN-IP>.sslip.io:3000/api/auth/callback/google` を追加（生 IP は Google が拒否する）
+- パスキー: HTTP + LAN IP では不可（Google ログインを利用）
+
+環境変数は 1Password CLI（`.env.op`）経由。詳細は `.env.example` を参照。

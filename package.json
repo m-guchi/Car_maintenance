@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bash scripts/with-op-env.sh sh -c 'prisma generate && next dev -p 3000'",
+    "dev": "bash scripts/dev.sh",
     "build": "bash scripts/with-op-env.sh sh -c 'prisma generate && next build'",
     "start": "bash scripts/with-op-env.sh next start",
     "lint": "eslint",

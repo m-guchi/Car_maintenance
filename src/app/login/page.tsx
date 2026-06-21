@@ -46,7 +46,9 @@ function LoginForm() {
                 {passkeyError ??
                   (error === "AccessDenied"
                     ? "許可されていないアカウントです。管理者に連絡してください。"
-                    : "ログインに失敗しました。もう一度お試しください。")}
+                    : error === "Configuration"
+                      ? "サーバー設定エラーです。MySQL が起動しているか確認し、npm run db:check を実行してください。"
+                      : "ログインに失敗しました。もう一度お試しください。")}
               </div>
             )}
 

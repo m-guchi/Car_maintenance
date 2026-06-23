@@ -48,11 +48,9 @@ export function MonthlyDistanceChart({ totals }: MonthlyDistanceChartProps) {
     getDefaultDistanceYear(availableYears),
   );
 
-  useEffect(() => {
-    if (!availableYears.includes(selectedYear)) {
-      setSelectedYear(getDefaultDistanceYear(availableYears));
-    }
-  }, [availableYears, selectedYear]);
+  const displayYear = availableYears.includes(selectedYear)
+    ? selectedYear
+    : getDefaultDistanceYear(availableYears);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -78,10 +76,10 @@ export function MonthlyDistanceChart({ totals }: MonthlyDistanceChartProps) {
   }, []);
 
   const chartData = useMemo(
-    () => buildMonthlyDistancesForYear(totalsMap, selectedYear),
-    [totalsMap, selectedYear],
+    () => buildMonthlyDistancesForYear(totalsMap, displayYear),
+    [totalsMap, displayYear],
   );
-  const comparisonYear = selectedYear - 1;
+  const comparisonYear = displayYear - 1;
 
   if (totals.length === 0) {
     return (
@@ -94,7 +92,7 @@ export function MonthlyDistanceChart({ totals }: MonthlyDistanceChartProps) {
       chartData={chartData}
       chartWidth={chartWidth}
       containerRef={containerRef}
-      selectedYear={selectedYear}
+      selectedYear={displayYear}
       comparisonYear={comparisonYear}
       availableYears={availableYears}
       onYearChange={setSelectedYear}

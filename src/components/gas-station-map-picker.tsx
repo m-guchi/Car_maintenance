@@ -285,7 +285,6 @@ async function fetchStationByOsmId(osmId: string): Promise<GasStation | null> {
 export function GasStationMapPicker({
   enabled = true,
   selectedStationId,
-  selectedStationKey = null,
   gasStationBrands,
   knownStations = [],
   initialFocusOsmId = null,
@@ -316,6 +315,10 @@ export function GasStationMapPicker({
     null,
   );
   const [mapCenter, setMapCenter] = useState<MapCenter | null>(null);
+  const mapCenterRef = useRef(mapCenter);
+  useEffect(() => {
+    mapCenterRef.current = mapCenter;
+  }, [mapCenter]);
   const [mapReady, setMapReady] = useState(false);
   const [isSearchingAtMapCenter, setIsSearchingAtMapCenter] = useState(false);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -596,7 +599,7 @@ export function GasStationMapPicker({
   );
 
   const loadFocusedView = useCallback(
-    async (view: { lat: number; lon: number }, _label?: string | null) => {
+    async (view: { lat: number; lon: number }) => {
       const requestToken = activeRequestRef.current + 1;
       activeRequestRef.current = requestToken;
       shouldFitBoundsRef.current = false;
@@ -667,10 +670,7 @@ export function GasStationMapPicker({
       }
 
       if (focusViewLat != null && focusViewLon != null) {
-        void loadFocusedView(
-          { lat: focusViewLat, lon: focusViewLon },
-          initialFocusLabel,
-        );
+        void loadFocusedView({ lat: focusViewLat, lon: focusViewLon });
         return;
       }
 
@@ -763,11 +763,11 @@ export function GasStationMapPicker({
 
     const centerLat =
       pendingFocusViewRef.current?.lat ??
-      mapCenter?.lat ??
+      mapCenterRef.current?.lat ??
       OSAKA_STATION_FALLBACK.lat;
     const centerLon =
       pendingFocusViewRef.current?.lon ??
-      mapCenter?.lon ??
+      mapCenterRef.current?.lon ??
       OSAKA_STATION_FALLBACK.lon;
     const initialZoom = pendingFocusViewRef.current?.zoom ?? 14;
     const stationMarkers = stationMarkersRef.current;

@@ -35,12 +35,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   events: {
     async createUser({ user }) {
       if (user.email) {
-        await notifyDiscordSignup(user.email);
+        await notifyDiscordSignup({
+          email: user.email,
+          name: user.name,
+          provider: "google",
+        });
       }
     },
-    async signIn({ user, isNewUser }) {
+    async signIn({ user, account, isNewUser }) {
       if (user.email && !isNewUser) {
-        await notifyDiscordLogin(user.email);
+        await notifyDiscordLogin({
+          email: user.email,
+          name: user.name,
+          provider: account?.provider,
+        });
       }
     },
   },

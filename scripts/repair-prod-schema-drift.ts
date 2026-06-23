@@ -4,6 +4,8 @@
 import { buildDatabaseUrl, getDatabaseConfig } from "../src/lib/database-url";
 import { createPrismaClient } from "../src/lib/prisma";
 
+import { MIGRATION_REPAIRS } from "./migration-repairs.mjs";
+
 type ColumnRow = { COLUMN_NAME: string };
 
 type MigrationRow = {
@@ -17,24 +19,7 @@ type DbIdentityRow = {
   port: number | null;
 };
 
-const REPAIRS = [
-  {
-    migration: "20250623000000_registered_gas_station_coords",
-    table: "registered_gas_stations",
-    columns: [
-      { name: "latitude", ddl: "ADD COLUMN `latitude` DOUBLE NULL" },
-      { name: "longitude", ddl: "ADD COLUMN `longitude` DOUBLE NULL" },
-    ],
-  },
-  {
-    migration: "20250623100000_maintenance_category_intervals",
-    table: "maintenance_categories",
-    columns: [
-      { name: "interval_km", ddl: "ADD COLUMN `interval_km` INTEGER NULL" },
-      { name: "interval_days", ddl: "ADD COLUMN `interval_days` INTEGER NULL" },
-    ],
-  },
-] as const;
+const REPAIRS = MIGRATION_REPAIRS;
 
 function maskDatabaseUrl(url: string): string {
   try {
@@ -146,6 +131,8 @@ async function main() {
     console.log("");
     console.log("migrate deploy が未適用のままなら、次も実行してください:");
     console.log("  npm run db:migrate:prod:tunnel");
+    console.log("カラムは揃っているのに失敗状態のとき:");
+    console.log("  node scripts/reconcile-migrations-deploy.mjs");
   } else {
     console.log("修復は不要でした。");
   }

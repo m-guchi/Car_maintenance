@@ -135,6 +135,8 @@ jobs:
             scripts/install-apache-vhost.sh \
             scripts/update-env-file.sh \
             scripts/prod-db-ping.mjs \
+            scripts/reconcile-migrations-deploy.mjs \
+            scripts/migration-repairs.mjs \
             next.config.ts \
             ecosystem.config.js
 
@@ -244,6 +246,9 @@ jobs:
 
             echo "Installing production dependencies..."
             npm install --omit=dev --no-audit --prefer-offline
+
+            echo "Reconciling schema drift before migrations..."
+            node scripts/reconcile-migrations-deploy.mjs
 
             echo "Applying database migrations..."
             npx prisma migrate deploy

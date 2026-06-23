@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { TrendLineChart } from "@/components/trend-line-chart";
+import { ScrollableTrendLineChart } from "@/components/scrollable-trend-line-chart";
 import type { PriceTrendByStation, PriceTrendPoint } from "@/lib/fuel-stats";
 
 type SerializablePriceTrendPoint = Omit<PriceTrendPoint, "date"> & {
@@ -35,7 +35,7 @@ export function FuelPriceTrendChart({
 }: FuelPriceTrendChartProps) {
   const options = useMemo(
     () => [
-      { key: ALL_STATIONS_KEY, label: "すべて" },
+      { key: ALL_STATIONS_KEY, label: "全体" },
       ...priceTrendByStation.map((station) => ({
         key: station.key,
         label: station.label,
@@ -60,7 +60,7 @@ export function FuelPriceTrendChart({
       {options.length > 1 && (
         <div>
           <label htmlFor="price-trend-station" className="sr-only">
-            店舗
+            表示対象
           </label>
           <select
             id="price-trend-station"
@@ -77,22 +77,13 @@ export function FuelPriceTrendChart({
         </div>
       )}
 
-      <TrendLineChart
+      <ScrollableTrendLineChart
         points={activePoints}
-        ariaLabel="単価推移グラフ"
+        ariaLabel="ガソリン単価推移グラフ"
         yAxisLabel="単価（円/L）"
         formatYTick={(value) => value.toLocaleString("ja-JP")}
         colorClassName="text-amber-500"
       />
-
-      {activePoints.length > 0 && (
-        <p className="text-xs text-slate-500">
-          {activePoints.length}件の記録
-          {selectedKey !== ALL_STATIONS_KEY
-            ? `（${options.find((option) => option.key === selectedKey)?.label ?? ""}）`
-            : ""}
-        </p>
-      )}
     </div>
   );
 }

@@ -17,6 +17,14 @@ export type MonthlyFuelCost = {
   totalCost: number;
 };
 
+export type MonthlyDistance = {
+  monthKey: string;
+  label: string;
+  distanceKm: number;
+  previousYearDistanceKm: number | null;
+};
+
+export const FUEL_CHART_ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 export const MONTHLY_FUEL_COST_INITIAL_VISIBLE = 6;
 
 export type PriceTrendPoint = {
@@ -38,8 +46,10 @@ export type FuelDashboardStats = {
   totalDistanceKm: number;
   totalOdometerKm: number | null;
   logCount: number;
+  efficiencyRecordCount: number;
   efficiencyHistory: FuelEfficiencyPoint[];
   monthlyCosts: MonthlyFuelCost[];
+  monthlyDistances: MonthlyDistance[];
   priceTrend: PriceTrendPoint[];
   priceTrendByStation: PriceTrendByStation[];
 };
@@ -97,6 +107,76 @@ export function computeFuelEfficiencyHistory(
       },
     ];
   });
+}
+
+function getMonthKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    year: "numeric",
+    month: "2-digit",
+    timeZone: "Asia/Tokyo",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "";
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+
+  return `${year}-${month}`;
+}
+
+function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split("-");
+
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "short",
+    timeZone: "Asia/Tokyo",
+  }).format(new Date(`${year}-${month}-01T12:00:00+09:00`));
+}
+
+function previousYearMonthKey(monthKey: string): string {
+  const [year, month] = monthKey.split("-");
+
+  return `${Number(year) - 1}-${month}`;
+}
+
+function compareMonthKeys(left: string, right: string): number {
+  return left.localeCompare(right);
+}
+
+export function computeMonthlyDistances(logs: FuelLogLike[]): MonthlyDistance[] {
+  const totals = new Map<string, number>();
+
+  for (const log of logs) {
+    const monthKey = getMonthKey(log.date);
+    totals.set(monthKey, (totals.get(monthKey) ?? 0) + toNumber(log.distanceKm));
+  }
+
+  if (totals.size === 0) {
+    return [];
+  }
+
+  const monthKeys = [...totals.keys()].sort(compareMonthKeys);
+  const latestMonthKey = monthKeys[monthKeys.length - 1];
+  const [latestYear, latestMonth] = latestMonthKey.split("-").map(Number);
+  const visibleMonths: string[] = [];
+
+  for (let index = 11; index >= 0; index -= 1) {
+    let year = latestYear;
+    let month = latestMonth - index;
+
+    while (month <= 0) {
+      month += 12;
+      year -= 1;
+    }
+
+    visibleMonths.push(`${year}-${String(month).padStart(2, "0")}`);
+  }
+
+  return visibleMonths.map((monthKey) => ({
+    monthKey,
+    label: formatMonthLabel(monthKey),
+    distanceKm: totals.get(monthKey) ?? 0,
+    previousYearDistanceKm: totals.get(previousYearMonthKey(monthKey)) ?? null,
+  }));
 }
 
 export function computeMonthlyCosts(logs: FuelLogLike[]): MonthlyFuelCost[] {
@@ -172,13 +252,10 @@ export function getGasStationLabel(
   return "店舗未設定";
 }
 
-export function computePriceTrend(
-  logs: FuelLogLike[],
-  limit = 12,
-): PriceTrendPoint[] {
+export function computePriceTrend(logs: FuelLogLike[]): PriceTrendPoint[] {
   const sorted = sortLogsAsc(logs);
 
-  return (limit > 0 ? sorted.slice(-limit) : sorted).map((log) => ({
+  return sorted.map((log) => ({
     date: log.date,
     pricePerLiter: log.pricePerLiter,
   }));
@@ -213,7 +290,7 @@ export function computePriceTrendsByStation(
     .map(([key, { label, logs: stationLogs }]) => ({
       key,
       label,
-      points: computePriceTrend(stationLogs, 0),
+      points: computePriceTrend(stationLogs),
     }))
     .sort((left, right) => left.label.localeCompare(right.label, "ja"));
 }
@@ -265,8 +342,10 @@ export function computeFuelDashboardStats(
       vehicleInitialOdometer,
     ),
     logCount: logs.length,
-    efficiencyHistory: efficiencyHistory.slice(-6),
+    efficiencyRecordCount: efficiencyHistory.length,
+    efficiencyHistory,
     monthlyCosts: computeMonthlyCosts(logs),
+    monthlyDistances: computeMonthlyDistances(logs),
     priceTrend: computePriceTrend(logs),
     priceTrendByStation: computePriceTrendsByStation(logs),
   };

@@ -87,7 +87,7 @@
 |------|------|
 | 給油入力フォーム | ✅ | `/fuel/new` 入力・登録後確認画面・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択・入力時の燃費自動計算表示 |
 | 登録店舗管理（設定画面） | ✅ | `registered-gas-station-settings.tsx`, `registered_gas_stations` テーブル |
-| ダッシュボード（走行距離・燃費サマリー・月別費用・価格推移グラフ） | ✅ | `fuel-dashboard.tsx`, `FuelSummary`, `trend-line-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx`（月日×値軸の折れ線） |
+| ダッシュボード（走行距離・燃費サマリー、燃費/単価/月別走行距離グラフ） | ✅ | `fuel-dashboard.tsx`, `FuelSummary`, `scrollable-trend-line-chart.tsx`, `monthly-distance-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx` |
 | 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-map-picker.tsx`, `/api/gas-stations`（半径1km全件・中心地点の手動店舗登録・地図折りたたみ） |
 
 ### ③ メンテナンス記録 & カテゴリ動的管理
@@ -211,6 +211,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-23 | 給油グラフを再構成（燃費・単価は1年表示+横スクロール折れ線、単価は全体/店舗別、走行距離は月別棒+昨年折れ線、月別給油費を廃止） |
 | 2026-06-23 | メンテナンス記録 UI（入力・一覧・編集・削除・まとめて削除）と設定画面のカテゴリ CRUD（初期シード: 洗車・オイル交換・タイヤ交換・車検） |
 | 2026-06-23 | 給油記録 UX 改善（登録後確認画面のコンパクト化、登録済み店舗の距離順リスト・100m強調、地図は「地図から選択」で表示、中心地点の手動店舗登録、半径1km全件検索） |
 | 2026-06-22 | v1.1.0: 給油ダッシュボード強化（燃費・単価の折れ線グラフ、月別給油費の展開表示、走行距離サマリー）、入力時燃費表示、周辺スタンド検索改善 |

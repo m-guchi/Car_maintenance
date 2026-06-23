@@ -7,7 +7,7 @@ import { formatOdometer } from "@/lib/vehicle-display";
 
 import { FuelEfficiencyTrendChart } from "@/components/fuel-efficiency-trend-chart";
 import { FuelPriceTrendChart } from "@/components/fuel-price-trend-chart";
-import { MonthlyFuelCostChart } from "@/components/monthly-fuel-cost-chart";
+import { MonthlyDistanceChart } from "@/components/monthly-distance-chart";
 
 type FuelSummaryProps = {
   stats: FuelDashboardStats;
@@ -80,8 +80,8 @@ export function FuelSummary({ stats }: FuelSummaryProps) {
                 : "—"
             }
             hint={
-              stats.efficiencyHistory.length > 0
-                ? `${stats.efficiencyHistory.length}回分`
+              stats.efficiencyRecordCount > 0
+                ? `${stats.efficiencyRecordCount}回分`
                 : "給油記録が必要"
             }
           />
@@ -98,55 +98,51 @@ type FuelDashboardProps = {
 export function FuelDashboard({ stats }: FuelDashboardProps) {
   return (
     <section className="space-y-4">
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="app-card p-5">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            月別給油費
-          </h3>
-          <div className="mt-4">
-            <MonthlyFuelCostChart items={stats.monthlyCosts} />
-          </div>
-        </div>
-
-        <div className="app-card p-5">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            単価推移
-          </h3>
-          <div className="mt-4">
-            <FuelPriceTrendChart
-              priceTrend={stats.priceTrend.map((point) => ({
-                date: point.date.toISOString(),
-                pricePerLiter: point.pricePerLiter,
-              }))}
-              priceTrendByStation={stats.priceTrendByStation.map((station) => ({
-                key: station.key,
-                label: station.label,
-                points: station.points.map((point) => ({
-                  date: point.date.toISOString(),
-                  pricePerLiter: point.pricePerLiter,
-                })),
-              }))}
-            />
-          </div>
+      <div className="app-card p-5">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          燃費
+        </h3>
+        <div className="mt-4">
+          <FuelEfficiencyTrendChart
+            efficiencyHistory={stats.efficiencyHistory.map((point) => ({
+              date: point.date.toISOString(),
+              kmPerLiter: point.kmPerLiter,
+              distanceKm: point.distanceKm,
+            }))}
+          />
         </div>
       </div>
 
-      {stats.efficiencyHistory.length > 0 && (
-        <div className="app-card p-5">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-            燃費の推移
-          </h3>
-          <div className="mt-4">
-            <FuelEfficiencyTrendChart
-              efficiencyHistory={stats.efficiencyHistory.map((point) => ({
+      <div className="app-card p-5">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          ガソリン単価
+        </h3>
+        <div className="mt-4">
+          <FuelPriceTrendChart
+            priceTrend={stats.priceTrend.map((point) => ({
+              date: point.date.toISOString(),
+              pricePerLiter: point.pricePerLiter,
+            }))}
+            priceTrendByStation={stats.priceTrendByStation.map((station) => ({
+              key: station.key,
+              label: station.label,
+              points: station.points.map((point) => ({
                 date: point.date.toISOString(),
-                kmPerLiter: point.kmPerLiter,
-                distanceKm: point.distanceKm,
-              }))}
-            />
-          </div>
+                pricePerLiter: point.pricePerLiter,
+              })),
+            }))}
+          />
         </div>
-      )}
+      </div>
+
+      <div className="app-card p-5">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          走行距離
+        </h3>
+        <div className="mt-4">
+          <MonthlyDistanceChart items={stats.monthlyDistances} />
+        </div>
+      </div>
     </section>
   );
 }

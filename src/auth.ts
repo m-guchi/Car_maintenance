@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 
 applyAuthUrlEnv();
 
+let skipNextPasskeyLoginNotification = false;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(prisma),
@@ -42,8 +44,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
       }
     },
+    linkAccount({ account }) {
+      if (account.provider === "passkey") {
+        skipNextPasskeyLoginNotification = true;
+      }
+    },
     async signIn({ user, account, isNewUser }) {
       if (user.email && !isNewUser) {
+        if (
+          account?.provider === "passkey" &&
+          skipNextPasskeyLoginNotification
+        ) {
+          skipNextPasskeyLoginNotification = false;
+          return;
+        }
+
         await notifyDiscordLogin({
           email: user.email,
           name: user.name,

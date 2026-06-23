@@ -10,3 +10,9 @@ export async function hasRegisteredPasskeys(email: string): Promise<boolean> {
 
   return (user?._count.authenticators ?? 0) > 0;
 }
+
+export async function deletePasskeysForUser(userId: string): Promise<void> {
+  await prisma.authenticator.deleteMany({
+    where: { userId },
+  });
+}

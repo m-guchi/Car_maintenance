@@ -33,9 +33,9 @@ export default async function HomePage() {
       />
 
       <AppPage>
-        {email && (
+        {email && !hasPasskey && (
           <div className="mb-6">
-            <PasskeyRegisterCard hasPasskey={hasPasskey} />
+            <PasskeyRegisterCard />
           </div>
         )}
 

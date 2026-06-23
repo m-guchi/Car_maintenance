@@ -2,7 +2,7 @@
 
 > **他 Agent 向け:** 本ファイルが仕様書（Discord通知機能追加版）に対する実装状況の正本です。  
 > 機能追加・デプロイ完了時は **必ず本ファイルを更新** してください。  
-> **最終更新:** 2026-06-22
+> **最終更新:** 2026-06-23
 
 ## ステータス凡例
 
@@ -44,7 +44,7 @@
 | NextAuth (Auth.js) | ✅ | `src/auth.ts`, `src/auth.config.ts` |
 | Google OAuth | ✅ | `src/auth.ts` |
 | メール制限 (`ALLOWED_EMAIL`) | ✅ | `src/auth.config.ts` |
-| WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + Google ログイン後の登録導線 (`passkey-register-card.tsx`) |
+| WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + ホーム初回登録 (`passkey-register-card.tsx`) + 設定画面の登録・再設定 (`passkey-settings.tsx`) |
 | Discord Webhook（signup / login 2系統） | ✅ | `src/lib/discord.ts`, `src/auth.ts` events |
 | PWA | ⚠️ | `public/manifest.json`, `public/sw.js`, `public/icons/`, `app-bottom-nav.tsx`, `app-page.tsx` |
 | pm2 | ✅ | `ecosystem.config.js`（本番 PORT 3104 既定） |
@@ -76,7 +76,7 @@
 |------|------|------|
 | Google ログイン | ✅ | |
 | 許可外メール拒否 | ✅ | `ALLOWED_EMAIL` |
-| パスキー登録 → 2回目以降顔認証ログイン | ✅ | Google 初回ログイン後ホームで登録、2回目以降 `next-auth/webauthn` でログイン |
+| パスキー登録 → 2回目以降顔認証ログイン | ✅ | Google 初回ログイン後ホームで登録、設定画面で再設定、2回目以降 `next-auth/webauthn` でログイン |
 | Discord 新規登録通知 | ✅ | `events.createUser` → `DISCORD_WEBHOOK_SIGNUP_URL` |
 | Discord ログイン通知 | ✅ | `events.signIn`（`!isNewUser`）→ `DISCORD_WEBHOOK_LOGIN_URL` |
 | 未ログイン時 middleware ガード | ✅ | `src/middleware.ts` |
@@ -172,7 +172,7 @@
 ## 主要ファイル索引（Agent 用）
 
 ```
-認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/lib/passkey.ts
+認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/components/passkey-settings.tsx, src/lib/passkey.ts
 車両:     src/app/vehicles/, src/components/vehicle-form.tsx, src/components/vehicle-list.tsx, src/lib/vehicles.ts
 給油:     src/app/(app)/fuel/, src/components/fuel-*.tsx, src/lib/fuel-*.ts, src/app/api/gas-stations/route.ts
 Discord:  src/lib/discord.ts
@@ -212,6 +212,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 | 日付 | 内容 |
 |------|------|
 | 2026-06-22 | v1.1.0: 給油ダッシュボード強化（燃費・単価の折れ線グラフ、月別給油費の展開表示、走行距離サマリー）、入力時燃費表示、周辺スタンド検索改善 |
+| 2026-06-23 | パスキー登録・再設定時の Discord ログイン通知を抑制（`linkAccount` で登録フローを判別） |
+| 2026-06-23 | 設定画面でパスキーの登録・再設定（既存パスキー削除後に再登録、`passkey-settings.tsx`） |
 | 2026-06-22 | 燃費の推移グラフを単価推移と同じ折れ線グラフ（月日×燃費）に統一（`TrendLineChart` 共通化） |
 | 2026-06-22 | 周辺ガソリンスタンド検索の精度改善（Overpass 件数上限除去・距離順ソート・`shop=fuel` / relation 対応） |
 | 2026-06-22 | 単価推移グラフを月日（横軸）× 単価（縦軸）に改善し、店舗ごとの切替を追加 |

@@ -30,6 +30,11 @@
     "db:tunnel:prod": "bash scripts/prod-db-tunnel.sh",
     "db:check:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh bash scripts/tsx.sh scripts/db-check.ts",
     "db:studio:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh prisma studio",
+    "db:migrate:prod": "bash scripts/with-op-prod-db.sh prisma migrate deploy",
+    "db:migrate:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh prisma migrate deploy",
+    "db:migrate:status:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh prisma migrate status",
+    "db:repair:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh bash scripts/tsx.sh scripts/repair-prod-schema-drift.ts",
+    "db:diagnose:prod:tunnel": "DB_TUNNEL=true bash scripts/with-op-prod-db.sh bash scripts/tsx.sh scripts/db-prod-diagnose.ts",
     "dev:prod-db": "bash scripts/dev-prod-db.sh",
     "dev:prod-db:tunnel": "DB_TUNNEL=true bash scripts/dev-prod-db.sh"
   },

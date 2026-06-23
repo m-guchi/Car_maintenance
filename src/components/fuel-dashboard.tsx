@@ -1,5 +1,4 @@
 import {
-  formatCurrency,
   formatDistanceKmValue,
   formatFuelEfficiency,
 } from "@/lib/fuel-display";
@@ -10,41 +9,85 @@ import { FuelEfficiencyTrendChart } from "@/components/fuel-efficiency-trend-cha
 import { FuelPriceTrendChart } from "@/components/fuel-price-trend-chart";
 import { MonthlyFuelCostChart } from "@/components/monthly-fuel-cost-chart";
 
-type FuelMileageSummaryProps = {
-  totalOdometerKm: number | null;
-  distanceSinceRegistrationKm: number;
+type FuelSummaryProps = {
+  stats: FuelDashboardStats;
 };
 
-export function FuelMileageSummary({
-  totalOdometerKm,
-  distanceSinceRegistrationKm,
-}: FuelMileageSummaryProps) {
+function FuelSummaryMetric({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="app-card border-l-4 border-l-violet-500 p-4">
-        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-          総走行距離
-        </p>
-        <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-          {totalOdometerKm !== null ? formatOdometer(totalOdometerKm) : "—"}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">
-          {totalOdometerKm !== null
-            ? "最新のオドメーター"
-            : "登録時走行距離または給油記録が必要"}
-        </p>
+    <div className="min-w-0 p-4">
+      <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+        {label}
+      </p>
+      <p className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl dark:text-slate-100">
+        {value}
+      </p>
+      <p className="mt-1 text-xs text-slate-500">{hint}</p>
+    </div>
+  );
+}
+
+export function FuelSummary({ stats }: FuelSummaryProps) {
+  return (
+    <section className="space-y-4">
+      <div className="app-card overflow-hidden border-l-4 border-l-violet-500 p-0">
+        <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-600">
+          <FuelSummaryMetric
+            label="総走行距離"
+            value={
+              stats.totalOdometerKm !== null
+                ? formatOdometer(stats.totalOdometerKm)
+                : "—"
+            }
+            hint={
+              stats.totalOdometerKm !== null
+                ? "最新のオドメーター"
+                : "登録時走行距離または給油記録が必要"
+            }
+          />
+          <FuelSummaryMetric
+            label="登録以降の走行距離"
+            value={formatDistanceKmValue(stats.totalDistanceKm)}
+            hint="給油記録の走行距離合計"
+          />
+        </div>
       </div>
 
-      <div className="app-card border-l-4 border-l-sky-500 p-4">
-        <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-          登録以降の走行距離
-        </p>
-        <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-          {formatDistanceKmValue(distanceSinceRegistrationKm)}
-        </p>
-        <p className="mt-1 text-xs text-slate-500">給油記録の走行距離合計</p>
+      <div className="app-card overflow-hidden border-l-4 border-l-emerald-500 p-0">
+        <div className="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-600">
+          <FuelSummaryMetric
+            label="直近の燃費"
+            value={
+              stats.latestEfficiency !== null
+                ? formatFuelEfficiency(stats.latestEfficiency)
+                : "—"
+            }
+            hint="満タン給油ベース"
+          />
+          <FuelSummaryMetric
+            label="平均燃費"
+            value={
+              stats.averageEfficiency !== null
+                ? formatFuelEfficiency(stats.averageEfficiency)
+                : "—"
+            }
+            hint={
+              stats.efficiencyHistory.length > 0
+                ? `${stats.efficiencyHistory.length}回分`
+                : "給油記録が必要"
+            }
+          />
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -55,46 +98,6 @@ type FuelDashboardProps = {
 export function FuelDashboard({ stats }: FuelDashboardProps) {
   return (
     <section className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="app-card border-l-4 border-l-emerald-500 p-4">
-          <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-            直近の燃費
-          </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {stats.latestEfficiency !== null
-              ? formatFuelEfficiency(stats.latestEfficiency)
-              : "—"}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">満タン給油ベース</p>
-        </div>
-
-        <div className="app-card border-l-4 border-l-blue-500 p-4">
-          <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-            平均燃費
-          </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {stats.averageEfficiency !== null
-              ? formatFuelEfficiency(stats.averageEfficiency)
-              : "—"}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {stats.efficiencyHistory.length}回分
-          </p>
-        </div>
-
-        <div className="app-card border-l-4 border-l-amber-500 p-4">
-          <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
-            累計給油費
-          </p>
-          <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {formatCurrency(stats.totalCost)}
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            {stats.logCount}件の記録
-          </p>
-        </div>
-      </div>
-
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="app-card p-5">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">

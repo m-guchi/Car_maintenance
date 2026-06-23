@@ -19,6 +19,8 @@ export type { RegisteredGasStationRecord } from "@/lib/registered-gas-station-ty
 function toRecord(station: {
   id: string;
   osmId: string | null;
+  latitude: number | null;
+  longitude: number | null;
   registeredName: string;
   brand: string | null;
   hiddenFromPicker: boolean;
@@ -27,11 +29,32 @@ function toRecord(station: {
   return {
     id: station.id,
     osmId: station.osmId,
+    latitude: station.latitude,
+    longitude: station.longitude,
     registeredName: station.registeredName,
     brand: station.brand,
     hiddenFromPicker: station.hiddenFromPicker,
     displayOrder: station.displayOrder,
   };
+}
+
+function isValidCoordinate(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value);
+}
+
+function parseManualLocation(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+): { latitude: number; longitude: number } | null {
+  if (!isValidCoordinate(latitude) || !isValidCoordinate(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return { latitude, longitude };
 }
 
 function toKnownGasStation(station: RegisteredGasStationRecord): KnownGasStation {
@@ -237,6 +260,8 @@ export async function updateRegisteredGasStationForUser(
     storeName: string;
     hiddenFromPicker?: boolean;
     osmId?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   },
 ) {
   const existing = await prisma.registeredGasStation.findFirst({
@@ -323,6 +348,27 @@ export async function updateRegisteredGasStationForUser(
     }
   }
 
+  let nextLatitude: number | null = null;
+  let nextLongitude: number | null = null;
+
+  if (nextOsmId) {
+    nextLatitude = null;
+    nextLongitude = null;
+  } else {
+    const manualLocation = parseManualLocation(
+      input.latitude ?? null,
+      input.longitude ?? null,
+    );
+
+    if (manualLocation) {
+      nextLatitude = manualLocation.latitude;
+      nextLongitude = manualLocation.longitude;
+    } else {
+      nextLatitude = existing.latitude;
+      nextLongitude = existing.longitude;
+    }
+  }
+
   const updated = await prisma.registeredGasStation.update({
     where: { id: stationId },
     data: {
@@ -330,6 +376,8 @@ export async function updateRegisteredGasStationForUser(
       brand: effectiveBrand,
       hiddenFromPicker: input.hiddenFromPicker ?? existing.hiddenFromPicker,
       osmId: nextOsmId,
+      latitude: nextLatitude,
+      longitude: nextLongitude,
     },
   });
 

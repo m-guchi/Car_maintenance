@@ -20,6 +20,7 @@
     "db:setup": "bash scripts/setup-db.sh",
     "db:migrate": "bash scripts/with-op-env.sh prisma migrate deploy",
     "db:migrate:dev": "bash scripts/with-op-env.sh prisma migrate dev",
+    "db:migrate:fix-checksums": "bash scripts/with-op-env.sh bash scripts/tsx.sh scripts/fix-migration-checksums.ts",
     "db:migrate:fix": "bash scripts/with-op-env.sh prisma migrate resolve --rolled-back 20250621000000_init",
     "db:migrate:resolve": "bash scripts/with-op-env.sh prisma migrate resolve",
     "db:deploy": "bash scripts/with-op-env.sh prisma migrate deploy",

@@ -197,13 +197,16 @@ export function RegisteredGasStationPicker({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       {known.isNearby && (
-                        <span className="inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
                           至近
                         </span>
                       )}
-                      <p className="break-words font-medium leading-snug text-slate-900 dark:text-slate-100">
+                      <p
+                        className="min-w-0 flex-1 truncate font-medium text-slate-900 dark:text-slate-100"
+                        title={known.registeredName}
+                      >
                         {known.registeredName}
                       </p>
                     </div>

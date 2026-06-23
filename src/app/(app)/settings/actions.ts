@@ -11,6 +11,7 @@ import {
 } from "@/lib/gas-station-brands";
 import {
   deleteRegisteredGasStationForUser,
+  reorderRegisteredGasStationsForUser,
   setRegisteredGasStationHiddenForUser,
   updateRegisteredGasStationForUser,
 } from "@/lib/registered-gas-stations";
@@ -144,6 +145,50 @@ function revalidateFuelPaths() {
   revalidatePath("/fuel");
 }
 
+export async function reorderRegisteredGasStationsAction(
+  orderedStationIds: string[],
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await reorderRegisteredGasStationsForUser(userId, orderedStationIds);
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateFuelPaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "並び順の更新に失敗しました" };
+  }
+}
+
+function parseOptionalGasStationOsmId(value: FormDataEntryValue | null): string | null {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return null;
+  }
+
+  if (!/^\d+$/.test(text)) {
+    return null;
+  }
+
+  return text;
+}
+
+function parseOptionalCoordinate(value: FormDataEntryValue | null): number | null {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const parsed = Number(text);
+
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function updateRegisteredGasStationAction(
   stationId: string,
   _prevState: SettingsActionState,
@@ -156,6 +201,9 @@ export async function updateRegisteredGasStationAction(
       customBrand: String(formData.get("gasStationBrandOther") ?? ""),
       storeName: String(formData.get("gasStationStoreName") ?? ""),
       hiddenFromPicker: formData.get("hiddenFromPicker") === "on",
+      osmId: parseOptionalGasStationOsmId(formData.get("gasStationOsmId")),
+      latitude: parseOptionalCoordinate(formData.get("gasStationLatitude")),
+      longitude: parseOptionalCoordinate(formData.get("gasStationLongitude")),
     });
 
     if ("error" in result) {

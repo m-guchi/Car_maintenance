@@ -39,6 +39,8 @@ type GasStationMapPickerProps = {
     customBrand: string;
     storeName: string;
     registrationName: string;
+    lat?: number;
+    lon?: number;
   }) => void;
 };
 
@@ -251,7 +253,9 @@ async function fetchNearbyStations(lat: number, lon: number): Promise<GasStation
     radius: "1000",
     limit: "0",
   });
-  const response = await fetch(`/api/gas-stations?${params.toString()}`);
+  const response = await fetch(`/api/gas-stations?${params.toString()}`, {
+    signal: AbortSignal.timeout(30_000),
+  });
 
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as {
@@ -267,6 +271,7 @@ async function fetchNearbyStations(lat: number, lon: number): Promise<GasStation
 async function fetchStationByOsmId(osmId: string): Promise<GasStation | null> {
   const response = await fetch(
     `/api/gas-stations?osmId=${encodeURIComponent(osmId)}`,
+    { signal: AbortSignal.timeout(15_000) },
   );
 
   if (!response.ok) {
@@ -302,6 +307,9 @@ export function GasStationMapPicker({
 
   const [stations, setStations] = useState<GasStation[]>([]);
   const [phase, setPhase] = useState<LoadPhase>("pending");
+  const [loadingMode, setLoadingMode] = useState<
+    "awaiting-geolocation" | "searching-nearby"
+  >("searching-nearby");
   const [error, setError] = useState<string | null>(null);
   const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
   const [failureReason, setFailureReason] = useState<GeolocationFailureReason | null>(
@@ -319,7 +327,6 @@ export function GasStationMapPicker({
   } | null>(null);
   const activeRequestRef = useRef(0);
   const hasInitializedRef = useRef(false);
-  const lastLoadedFocusKeyRef = useRef<string | null>(null);
   const shouldFitBoundsRef = useRef(true);
   const pendingFocusOsmIdRef = useRef<string | null>(null);
   const pendingFocusViewRef = useRef<{
@@ -327,7 +334,6 @@ export function GasStationMapPicker({
     lon: number;
     zoom: number;
   } | null>(null);
-  const skipClearRegisteredPinRef = useRef(false);
   const lastMapViewRef = useRef<{ lat: number; lng: number; zoom: number } | null>(
     null,
   );
@@ -443,6 +449,7 @@ export function GasStationMapPicker({
     shouldFitBoundsRef.current = true;
 
     setPhase("loading");
+    setLoadingMode("awaiting-geolocation");
     setError(null);
     setFallbackNotice(options?.notice ?? null);
     setFailureReason(null);
@@ -454,6 +461,8 @@ export function GasStationMapPicker({
       const reason: GeolocationFailureReason = blockedMessage.includes("HTTPS")
         ? "insecure-context"
         : "unsupported";
+
+      setLoadingMode("searching-nearby");
 
       void loadStationsAt(
         {
@@ -475,6 +484,8 @@ export function GasStationMapPicker({
           return;
         }
 
+        setLoadingMode("searching-nearby");
+
         void loadStationsAt(
           {
             lat: position.coords.latitude,
@@ -493,6 +504,8 @@ export function GasStationMapPicker({
         }
 
         const { reason } = getGeolocationErrorMessage(positionError.code);
+
+        setLoadingMode("searching-nearby");
 
         void loadStationsAt(
           {
@@ -522,6 +535,7 @@ export function GasStationMapPicker({
       pendingFocusOsmIdRef.current = osmId;
 
       setPhase("loading");
+      setLoadingMode("searching-nearby");
       setError(null);
       setFallbackNotice(null);
       setFailureReason(null);
@@ -578,16 +592,17 @@ export function GasStationMapPicker({
         pendingFocusOsmIdRef.current = null;
       }
     },
-    [loadStationsAt, loadNearbyStations, applyPendingMapView],
+    [applyPendingMapView, loadNearbyStations, loadStationsAt],
   );
 
   const loadFocusedView = useCallback(
-    async (view: { lat: number; lon: number }, label?: string | null) => {
+    async (view: { lat: number; lon: number }, _label?: string | null) => {
       const requestToken = activeRequestRef.current + 1;
       activeRequestRef.current = requestToken;
       shouldFitBoundsRef.current = false;
 
       setPhase("loading");
+      setLoadingMode("searching-nearby");
       setError(null);
       setFallbackNotice(null);
       setFailureReason(null);
@@ -600,83 +615,83 @@ export function GasStationMapPicker({
       };
       applyPendingMapView();
 
-      skipClearRegisteredPinRef.current = true;
-      setRegisteredCenterPin({
-        lat: view.lat,
-        lon: view.lon,
-        label: label?.trim() || "登録店舗",
-      });
+      try {
+        await loadStationsAt(
+          {
+            lat: view.lat,
+            lon: view.lon,
+            label: "登録店舗",
+            isFallback: false,
+          },
+          requestToken,
+          null,
+          null,
+          { fitBounds: false },
+        );
+      } catch (fetchError) {
+        if (requestToken !== activeRequestRef.current) {
+          return;
+        }
 
-      await loadStationsAt(
-        {
-          lat: view.lat,
-          lon: view.lon,
-          label: "登録店舗",
-          isFallback: false,
-        },
-        requestToken,
-        null,
-        null,
-        { fitBounds: false },
-      );
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "登録店舗の位置情報の取得に失敗しました",
+        );
+        setFailureReason("unknown");
+        setPhase("error");
+      }
     },
     [applyPendingMapView, loadStationsAt],
   );
 
+  const focusViewLat = initialFocusView?.lat;
+  const focusViewLon = initialFocusView?.lon;
+
   useEffect(() => {
     if (!enabled) {
       hasInitializedRef.current = false;
-      lastLoadedFocusKeyRef.current = null;
       return;
     }
 
-    const focusKey = initialFocusOsmId
-      ? `osm:${initialFocusOsmId}`
-      : initialFocusView
-        ? `view:${initialFocusView.lat.toFixed(6)},${initialFocusView.lon.toFixed(6)}`
-        : null;
+    let cancelled = false;
 
-    if (focusKey) {
-      if (lastLoadedFocusKeyRef.current === focusKey) {
+    const timer = window.setTimeout(() => {
+      if (cancelled) {
         return;
       }
 
-      lastLoadedFocusKeyRef.current = focusKey;
+      if (initialFocusOsmId) {
+        void loadFocusedStation(initialFocusOsmId);
+        return;
+      }
 
-      const timer = window.setTimeout(() => {
-        if (initialFocusOsmId) {
-          void loadFocusedStation(initialFocusOsmId);
-          return;
-        }
+      if (focusViewLat != null && focusViewLon != null) {
+        void loadFocusedView(
+          { lat: focusViewLat, lon: focusViewLon },
+          initialFocusLabel,
+        );
+        return;
+      }
 
-        if (initialFocusView) {
-          void loadFocusedView(initialFocusView, initialFocusLabel);
-        }
-      }, 0);
+      if (hasInitializedRef.current) {
+        return;
+      }
 
-      return () => {
-        window.clearTimeout(timer);
-      };
-    }
-
-    if (hasInitializedRef.current) {
-      return;
-    }
-
-    hasInitializedRef.current = true;
-
-    const timer = window.setTimeout(() => {
+      hasInitializedRef.current = true;
       loadNearbyStations();
     }, 0);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timer);
     };
   }, [
     enabled,
+    focusViewLat,
+    focusViewLon,
     initialFocusLabel,
     initialFocusOsmId,
-    initialFocusView,
     loadFocusedStation,
     loadFocusedView,
     loadNearbyStations,
@@ -861,6 +876,17 @@ export function GasStationMapPicker({
     };
     const isSearchCenter =
       mapCenter.label === "検索地点" || mapCenter.label === "指定した地点";
+    const showCenterMarker =
+      mapCenter.label === "現在地" ||
+      mapCenter.isFallback ||
+      isSearchCenter;
+
+    if (!showCenterMarker) {
+      centerMarkerRef.current?.remove();
+      centerMarkerRef.current = null;
+      return;
+    }
+
     const centerLabel = mapCenter.label;
 
     if (centerMarkerRef.current) {
@@ -914,6 +940,10 @@ export function GasStationMapPicker({
         registeredCenterPin.lon,
       ]);
       registeredCenterMarkerRef.current.setPopupContent(popupLabel);
+      registeredCenterMarkerRef.current.setIcon(
+        L.divIcon(createGasStationIcon("selected")),
+      );
+      registeredCenterMarkerRef.current.openPopup();
     } else {
       registeredCenterMarkerRef.current = L.marker(
         [registeredCenterPin.lat, registeredCenterPin.lon],
@@ -927,21 +957,6 @@ export function GasStationMapPicker({
         .openPopup();
     }
   }, [registeredCenterPin, mapReady]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      if (skipClearRegisteredPinRef.current) {
-        skipClearRegisteredPinRef.current = false;
-        return;
-      }
-
-      setRegisteredCenterPin(null);
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [selectedStationId, selectedStationKey]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -978,6 +993,8 @@ export function GasStationMapPicker({
           customBrand: selected.customBrand,
           storeName: selected.storeName,
           registrationName: selected.registrationName,
+          lat: station.lat,
+          lon: station.lon,
         });
       });
 
@@ -1064,6 +1081,8 @@ export function GasStationMapPicker({
       customBrand: info.customBrand,
       storeName: info.storeName,
       registrationName: info.registrationName,
+      lat: station.lat,
+      lon: station.lon,
     });
 
     mapRef.current?.setView([station.lat, station.lon], 15, { animate: true });
@@ -1096,6 +1115,7 @@ export function GasStationMapPicker({
 
     setIsSearchingAtMapCenter(true);
     setPhase("loading");
+    setLoadingMode("searching-nearby");
     setError(null);
 
     void loadStationsAt(
@@ -1144,9 +1164,10 @@ export function GasStationMapPicker({
         customBrand: selection.customBrand,
         storeName: selection.storeName,
         registrationName: selection.registrationName,
+        lat: coordinates.lat,
+        lon: coordinates.lon,
       });
 
-      skipClearRegisteredPinRef.current = true;
       setRegisteredCenterPin({
         lat: coordinates.lat,
         lon: coordinates.lon,
@@ -1294,7 +1315,11 @@ export function GasStationMapPicker({
       )}
 
       {phase !== "error" && phase !== "ready" && (
-        <p className="text-sm text-slate-500">現在地と周辺スタンドを読み込み中...</p>
+        <p className="text-sm text-slate-500">
+          {loadingMode === "awaiting-geolocation"
+            ? "現在地を取得中..."
+            : "地図中心の周辺スタンドを読み込み中..."}
+        </p>
       )}
 
       {fallbackNotice && phase !== "error" && (

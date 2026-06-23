@@ -163,6 +163,8 @@ model RegisteredGasStation {
   id               String   @id @default(cuid())
   userId           String   @map("user_id")
   osmId            String?  @map("osm_id")
+  latitude         Float?   @map("latitude")
+  longitude        Float?   @map("longitude")
   registeredName   String   @map("registered_name")
   brand            String?
   hiddenFromPicker Boolean  @default(false) @map("hidden_from_picker")

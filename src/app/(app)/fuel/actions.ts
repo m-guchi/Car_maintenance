@@ -363,7 +363,7 @@ export async function createFuelLogAction(
       registered: {
         date: parsed.data.date.toISOString(),
         distanceKm: parsed.data.distanceKm,
-        odometer: parsed.data.odometer,
+        odometer: parsed.data.odometer ?? null,
         fuelAmount: parsed.data.fuelAmount,
         pricePerLiter: parsed.data.pricePerLiter,
         totalCost: parsed.data.totalCost,

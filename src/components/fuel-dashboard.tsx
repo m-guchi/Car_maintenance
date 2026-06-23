@@ -123,14 +123,6 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
               date: point.date.toISOString(),
               pricePerLiter: point.pricePerLiter,
             }))}
-            priceTrendByStation={stats.priceTrendByStation.map((station) => ({
-              key: station.key,
-              label: station.label,
-              points: station.points.map((point) => ({
-                date: point.date.toISOString(),
-                pricePerLiter: point.pricePerLiter,
-              })),
-            }))}
           />
         </div>
       </div>

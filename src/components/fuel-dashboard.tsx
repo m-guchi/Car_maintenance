@@ -132,7 +132,7 @@ export function FuelDashboard({ stats }: FuelDashboardProps) {
           走行距離
         </h3>
         <div className="mt-4">
-          <MonthlyDistanceChart items={stats.monthlyDistances} />
+          <MonthlyDistanceChart totals={stats.monthlyDistanceTotals} />
         </div>
       </div>
     </section>

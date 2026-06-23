@@ -24,6 +24,11 @@ export type MonthlyDistance = {
   previousYearDistanceKm: number | null;
 };
 
+export type MonthlyDistanceTotal = {
+  monthKey: string;
+  distanceKm: number;
+};
+
 export const FUEL_CHART_ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 export const MONTHLY_FUEL_COST_INITIAL_VISIBLE = 6;
 
@@ -49,7 +54,7 @@ export type FuelDashboardStats = {
   efficiencyRecordCount: number;
   efficiencyHistory: FuelEfficiencyPoint[];
   monthlyCosts: MonthlyFuelCost[];
-  monthlyDistances: MonthlyDistance[];
+  monthlyDistanceTotals: MonthlyDistanceTotal[];
   priceTrend: PriceTrendPoint[];
   priceTrendByStation: PriceTrendByStation[];
 };
@@ -109,7 +114,7 @@ export function computeFuelEfficiencyHistory(
   });
 }
 
-function getMonthKey(date: Date): string {
+export function getMonthKey(date: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     year: "numeric",
     month: "2-digit",
@@ -122,7 +127,7 @@ function getMonthKey(date: Date): string {
   return `${year}-${month}`;
 }
 
-function formatMonthLabel(monthKey: string): string {
+export function formatMonthLabel(monthKey: string): string {
   const [year, month] = monthKey.split("-");
 
   return new Intl.DateTimeFormat("ja-JP", {
@@ -138,11 +143,9 @@ function previousYearMonthKey(monthKey: string): string {
   return `${Number(year) - 1}-${month}`;
 }
 
-function compareMonthKeys(left: string, right: string): number {
-  return left.localeCompare(right);
-}
-
-export function computeMonthlyDistances(logs: FuelLogLike[]): MonthlyDistance[] {
+export function computeMonthlyDistanceTotals(
+  logs: FuelLogLike[],
+): Map<string, number> {
   const totals = new Map<string, number>();
 
   for (const log of logs) {
@@ -150,35 +153,54 @@ export function computeMonthlyDistances(logs: FuelLogLike[]): MonthlyDistance[] 
     totals.set(monthKey, (totals.get(monthKey) ?? 0) + toNumber(log.distanceKm));
   }
 
-  if (totals.size === 0) {
-    return [];
-  }
-
-  const monthKeys = [...totals.keys()].sort(compareMonthKeys);
-  const latestMonthKey = monthKeys[monthKeys.length - 1];
-  const [latestYear, latestMonth] = latestMonthKey.split("-").map(Number);
-  const visibleMonths: string[] = [];
-
-  for (let index = 11; index >= 0; index -= 1) {
-    let year = latestYear;
-    let month = latestMonth - index;
-
-    while (month <= 0) {
-      month += 12;
-      year -= 1;
-    }
-
-    visibleMonths.push(`${year}-${String(month).padStart(2, "0")}`);
-  }
-
-  return visibleMonths.map((monthKey) => ({
-    monthKey,
-    label: formatMonthLabel(monthKey),
-    distanceKm: totals.get(monthKey) ?? 0,
-    previousYearDistanceKm: totals.get(previousYearMonthKey(monthKey)) ?? null,
-  }));
+  return totals;
 }
 
+export function getMonthlyDistanceYears(totals: Map<string, number>): number[] {
+  const currentYear = Number(getMonthKey(new Date()).split("-")[0]);
+
+  if (totals.size === 0) {
+    return [currentYear];
+  }
+
+  const years = [...totals.keys()].map((key) => Number(key.split("-")[0]));
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years, currentYear);
+  const result: number[] = [];
+
+  for (let year = maxYear; year >= minYear; year -= 1) {
+    result.push(year);
+  }
+
+  return result;
+}
+
+export function buildMonthlyDistancesForYear(
+  totals: Map<string, number>,
+  year: number,
+): MonthlyDistance[] {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+
+    return {
+      monthKey,
+      label: formatMonthLabel(monthKey),
+      distanceKm: totals.get(monthKey) ?? 0,
+      previousYearDistanceKm: totals.has(previousYearMonthKey(monthKey))
+        ? (totals.get(previousYearMonthKey(monthKey)) ?? 0)
+        : null,
+    };
+  });
+}
+
+export function serializeMonthlyDistanceTotals(
+  totals: Map<string, number>,
+): MonthlyDistanceTotal[] {
+  return [...totals.entries()]
+    .map(([monthKey, distanceKm]) => ({ monthKey, distanceKm }))
+    .sort((left, right) => left.monthKey.localeCompare(right.monthKey));
+}
 export function computeMonthlyCosts(logs: FuelLogLike[]): MonthlyFuelCost[] {
   const totals = new Map<string, number>();
 
@@ -330,6 +352,7 @@ export function computeFuelDashboardStats(
     distanceKm: toNumber(log.distanceKm),
     odometer: log.odometer ?? null,
   }));
+  const monthlyDistanceTotals = computeMonthlyDistanceTotals(logs);
 
   return {
     averageEfficiency,
@@ -345,7 +368,7 @@ export function computeFuelDashboardStats(
     efficiencyRecordCount: efficiencyHistory.length,
     efficiencyHistory,
     monthlyCosts: computeMonthlyCosts(logs),
-    monthlyDistances: computeMonthlyDistances(logs),
+    monthlyDistanceTotals: serializeMonthlyDistanceTotals(monthlyDistanceTotals),
     priceTrend: computePriceTrend(logs),
     priceTrendByStation: computePriceTrendsByStation(logs),
   };

@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 
 import { formatDistanceKmValue } from "@/lib/fuel-display";
-import type { MonthlyDistance } from "@/lib/fuel-stats";
+import {
+  buildMonthlyDistancesForYear,
+  getMonthKey,
+  getMonthlyDistanceYears,
+  type MonthlyDistance,
+  type MonthlyDistanceTotal,
+} from "@/lib/fuel-stats";
 
 type MonthlyDistanceChartProps = {
-  items: MonthlyDistance[];
+  totals: MonthlyDistanceTotal[];
 };
 
 const PADDING_LEFT = 52;
@@ -15,9 +21,38 @@ const PADDING_TOP = 16;
 const PADDING_BOTTOM = 36;
 const CHART_HEIGHT = 180;
 
-export function MonthlyDistanceChart({ items }: MonthlyDistanceChartProps) {
+function totalsToMap(totals: MonthlyDistanceTotal[]): Map<string, number> {
+  return new Map(totals.map((item) => [item.monthKey, item.distanceKm]));
+}
+
+function getDefaultDistanceYear(years: number[]): number {
+  const currentYear = Number(getMonthKey(new Date()).split("-")[0]);
+
+  if (years.includes(currentYear)) {
+    return currentYear;
+  }
+
+  return years[0] ?? currentYear;
+}
+
+export function MonthlyDistanceChart({ totals }: MonthlyDistanceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(360);
+
+  const totalsMap = useMemo(() => totalsToMap(totals), [totals]);
+  const availableYears = useMemo(
+    () => getMonthlyDistanceYears(totalsMap),
+    [totalsMap],
+  );
+  const [selectedYear, setSelectedYear] = useState(() =>
+    getDefaultDistanceYear(availableYears),
+  );
+
+  useEffect(() => {
+    if (!availableYears.includes(selectedYear)) {
+      setSelectedYear(getDefaultDistanceYear(availableYears));
+    }
+  }, [availableYears, selectedYear]);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -42,14 +77,50 @@ export function MonthlyDistanceChart({ items }: MonthlyDistanceChartProps) {
     return () => observer.disconnect();
   }, []);
 
-  const chartData = useMemo(() => items, [items]);
+  const chartData = useMemo(
+    () => buildMonthlyDistancesForYear(totalsMap, selectedYear),
+    [totalsMap, selectedYear],
+  );
+  const comparisonYear = selectedYear - 1;
 
-  if (chartData.length === 0) {
+  if (totals.length === 0) {
     return (
       <p className="text-sm text-slate-500">表示するデータがありません</p>
     );
   }
 
+  return (
+    <DistanceChart
+      chartData={chartData}
+      chartWidth={chartWidth}
+      containerRef={containerRef}
+      selectedYear={selectedYear}
+      comparisonYear={comparisonYear}
+      availableYears={availableYears}
+      onYearChange={setSelectedYear}
+    />
+  );
+}
+
+type DistanceChartProps = {
+  chartData: MonthlyDistance[];
+  chartWidth: number;
+  containerRef: RefObject<HTMLDivElement | null>;
+  selectedYear: number;
+  comparisonYear: number;
+  availableYears: number[];
+  onYearChange: (year: number) => void;
+};
+
+function DistanceChart({
+  chartData,
+  chartWidth,
+  containerRef,
+  selectedYear,
+  comparisonYear,
+  availableYears,
+  onYearChange,
+}: DistanceChartProps) {
   const currentValues = chartData.map((item) => item.distanceKm);
   const previousValues = chartData
     .map((item) => item.previousYearDistanceKm)
@@ -87,33 +158,49 @@ export function MonthlyDistanceChart({ items }: MonthlyDistanceChartProps) {
     .map((coord) => `${coord.x},${coord.y}`)
     .join(" ");
 
-  const yTicks = [
-    maxValue,
-    maxValue / 2,
-    0,
-  ];
+  const yTicks = [maxValue, maxValue / 2, 0];
 
   return (
     <div ref={containerRef} className="w-full space-y-3">
-      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-        <span className="inline-flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-sm bg-sky-500" aria-hidden="true" />
-          今年
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span
-            className="h-0.5 w-4 rounded-full bg-violet-400"
-            aria-hidden="true"
-          />
-          昨年
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-sm bg-sky-500" aria-hidden="true" />
+            {selectedYear}年
+          </span>
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="h-0.5 w-4 rounded-full bg-violet-400"
+              aria-hidden="true"
+            />
+            {comparisonYear}年
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="distance-chart-year" className="text-xs text-slate-500">
+            表示年
+          </label>
+          <select
+            id="distance-chart-year"
+            value={selectedYear}
+            onChange={(event) => onYearChange(Number(event.target.value))}
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-900/50"
+          >
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}年
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <svg
         viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
         className="h-[11.25rem] w-full"
         role="img"
-        aria-label="月別走行距離グラフ"
+        aria-label={`${selectedYear}年の月別走行距離グラフ`}
       >
         <line
           x1={PADDING_LEFT}
@@ -133,8 +220,7 @@ export function MonthlyDistanceChart({ items }: MonthlyDistanceChartProps) {
         />
 
         {yTicks.map((value, tickIndex) => {
-          const y =
-            PADDING_TOP + plotHeight - (value / maxValue) * plotHeight;
+          const y = PADDING_TOP + plotHeight - (value / maxValue) * plotHeight;
 
           return (
             <g key={`y-tick-${tickIndex}`}>

@@ -134,6 +134,8 @@ model MaintenanceCategory {
   userId       String   @map("user_id")
   name         String
   displayOrder Int      @default(0) @map("display_order")
+  intervalKm   Int?     @map("interval_km")
+  intervalDays Int?     @map("interval_days")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

@@ -1,21 +1,29 @@
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_MAINTENANCE_CATEGORY_SEEDS,
-  validateMaintenanceCategoryName,
+  validateMaintenanceCategoryInput,
+  type MaintenanceCategoryInput,
   type MaintenanceCategoryRecord,
 } from "@/lib/maintenance-category-types";
 
-export type { MaintenanceCategoryRecord } from "@/lib/maintenance-category-types";
+export type {
+  MaintenanceCategoryInput,
+  MaintenanceCategoryRecord,
+} from "@/lib/maintenance-category-types";
 
 function toRecord(category: {
   id: string;
   name: string;
   displayOrder: number;
+  intervalKm: number | null;
+  intervalDays: number | null;
 }): MaintenanceCategoryRecord {
   return {
     id: category.id,
     name: category.name,
     displayOrder: category.displayOrder,
+    intervalKm: category.intervalKm,
+    intervalDays: category.intervalDays,
   };
 }
 
@@ -37,6 +45,15 @@ export async function ensureMaintenanceCategoriesForUser(
 
   if (existing.length > 0) {
     return existing;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!user) {
+    // 例: ローカル DB でログインした JWT を本番 DB 接続時に使っている
+    return [];
   }
 
   await prisma.maintenanceCategory.createMany({
@@ -61,15 +78,17 @@ export async function getMaintenanceCategoryForUser(
 
 export async function createMaintenanceCategoryForUser(
   userId: string,
-  name: string,
+  input: string | MaintenanceCategoryInput,
 ) {
-  const error = validateMaintenanceCategoryName(name);
+  const normalized: MaintenanceCategoryInput =
+    typeof input === "string" ? { name: input } : input;
+  const error = validateMaintenanceCategoryInput(normalized);
 
   if (error) {
     return { error } as const;
   }
 
-  const trimmedName = name.trim();
+  const trimmedName = normalized.name.trim();
   const categories = await ensureMaintenanceCategoriesForUser(userId);
 
   if (categories.some((category) => category.name === trimmedName)) {
@@ -83,6 +102,8 @@ export async function createMaintenanceCategoryForUser(
     data: {
       userId,
       name: trimmedName,
+      intervalKm: normalized.intervalKm ?? null,
+      intervalDays: normalized.intervalDays ?? null,
       displayOrder: nextOrder,
     },
   });
@@ -93,7 +114,7 @@ export async function createMaintenanceCategoryForUser(
 export async function updateMaintenanceCategoryForUser(
   userId: string,
   categoryId: string,
-  input: { name?: string },
+  input: Partial<MaintenanceCategoryInput>,
 ) {
   const existing = await getMaintenanceCategoryForUser(userId, categoryId);
 
@@ -102,10 +123,19 @@ export async function updateMaintenanceCategoryForUser(
   }
 
   const nextName = input.name?.trim() ?? existing.name;
-  const nameError = validateMaintenanceCategoryName(nextName);
+  const nextIntervalKm =
+    input.intervalKm !== undefined ? input.intervalKm : existing.intervalKm;
+  const nextIntervalDays =
+    input.intervalDays !== undefined ? input.intervalDays : existing.intervalDays;
 
-  if (nameError) {
-    return { error: nameError } as const;
+  const validationError = validateMaintenanceCategoryInput({
+    name: nextName,
+    intervalKm: nextIntervalKm,
+    intervalDays: nextIntervalDays,
+  });
+
+  if (validationError) {
+    return { error: validationError } as const;
   }
 
   if (nextName !== existing.name) {
@@ -124,7 +154,11 @@ export async function updateMaintenanceCategoryForUser(
 
   const updated = await prisma.maintenanceCategory.update({
     where: { id: categoryId },
-    data: { name: nextName },
+    data: {
+      name: nextName,
+      intervalKm: nextIntervalKm,
+      intervalDays: nextIntervalDays,
+    },
   });
 
   return { category: toRecord(updated) } as const;

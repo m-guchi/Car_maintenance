@@ -1,13 +1,25 @@
-import Link from "next/link";
-
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
+import { HomeMaintenanceAlerts } from "@/components/home-maintenance-alerts";
+import { HomeMonthlyCosts } from "@/components/home-monthly-costs";
+import { HomeQuickActions } from "@/components/home-quick-actions";
+import { HomeWelcomeCard } from "@/components/home-welcome-card";
 import { PasskeyRegisterCard } from "@/components/passkey-register-card";
-import { menuItems } from "@/lib/nav-items";
+import { listFuelLogsForVehicle } from "@/lib/fuel-logs";
+import { ensureMaintenanceCategoriesForUser } from "@/lib/maintenance-categories";
+import {
+  listMaintenanceLogsForVehicle,
+  serializeMaintenanceLogsForClient,
+} from "@/lib/maintenance-logs";
+import {
+  buildMaintenanceChartData,
+  computeMaintenanceSchedule,
+  getMaintenanceAlerts,
+} from "@/lib/maintenance-stats";
 import { hasRegisteredPasskeys } from "@/lib/passkey";
-import { getVehicleSubtitle } from "@/lib/vehicle-display";
-import { listVehicles } from "@/lib/vehicles";
+import { computeVehicleMonthlyCosts } from "@/lib/vehicle-costs";
+import { getActiveVehicle, listVehicles } from "@/lib/vehicles";
 
 export default async function HomePage() {
   const session = await auth();
@@ -15,10 +27,54 @@ export default async function HomePage() {
   const userId = session?.user?.id;
   const hasPasskey = email ? await hasRegisteredPasskeys(email) : false;
   const vehicles = userId ? await listVehicles(userId) : [];
-  const activeVehicle = vehicles.find((vehicle) => vehicle.isActive);
-  const activeVehicleSubtitle = activeVehicle
-    ? getVehicleSubtitle(activeVehicle)
+  const activeVehicle = userId ? await getActiveVehicle(userId) : null;
+
+  const categories = userId ? await ensureMaintenanceCategoriesForUser(userId) : [];
+
+  const fuelLogs =
+    userId && activeVehicle
+      ? await listFuelLogsForVehicle(userId, activeVehicle.id)
+      : null;
+
+  const maintenanceLogs =
+    userId && activeVehicle
+      ? await listMaintenanceLogsForVehicle(userId, activeVehicle.id)
+      : null;
+
+  const clientMaintenanceLogs = maintenanceLogs
+    ? serializeMaintenanceLogsForClient(maintenanceLogs)
+    : [];
+
+  const fuelOdometerSamples =
+    fuelLogs?.map((log) => ({
+      date: log.date,
+      odometer: log.odometer,
+      distanceKm: Number(log.distanceKm),
+    })) ?? [];
+
+  const chartData = activeVehicle
+    ? buildMaintenanceChartData(
+        categories,
+        fuelOdometerSamples,
+        clientMaintenanceLogs,
+        activeVehicle.initialOdometer,
+      )
     : null;
+
+  const schedule = chartData
+    ? computeMaintenanceSchedule(
+        categories,
+        clientMaintenanceLogs,
+        chartData.currentOdometerKm,
+      )
+    : [];
+
+  const maintenanceAlerts = getMaintenanceAlerts(schedule);
+
+  const monthlyCosts = computeVehicleMonthlyCosts(
+    fuelLogs ?? [],
+    clientMaintenanceLogs,
+  );
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -32,93 +88,22 @@ export default async function HomePage() {
         }}
       />
 
-      <AppPage>
-        {email && !hasPasskey && (
-          <div className="mb-6">
-            <PasskeyRegisterCard />
-          </div>
+      <AppPage className="space-y-6">
+        {email && !hasPasskey && <PasskeyRegisterCard />}
+
+        {maintenanceAlerts.length > 0 ? (
+          <HomeMaintenanceAlerts alerts={maintenanceAlerts} />
+        ) : (
+          <HomeWelcomeCard
+            activeVehicle={activeVehicle}
+            vehicleCount={vehicles.length}
+            userName={session?.user?.name}
+          />
         )}
 
-        <section className="app-card overflow-hidden border-l-4 border-l-blue-500">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-2xl dark:bg-blue-900/40">
-              🚗
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="app-section-title">ようこそ</h2>
-              {activeVehicle ? (
-                <p className="mt-2 text-sm leading-relaxed app-text-muted">
-                  使用中の車両:{" "}
-                  <span className="font-semibold text-slate-900 dark:text-slate-100">
-                    {activeVehicle.name}
-                  </span>
-                  {activeVehicleSubtitle && (
-                    <span className="app-text-subtle">
-                      {" "}
-                      （{activeVehicleSubtitle}）
-                    </span>
-                  )}
-                </p>
-              ) : (
-                <p className="mt-2 text-sm leading-relaxed app-text-muted">
-                  まず車両を登録して、給油記録やメンテナンス管理を始めましょう。
-                </p>
-              )}
-              <Link
-                href="/vehicles"
-                className="app-btn-primary mt-4"
-              >
-                {vehicles.length > 0 ? "車両を管理する" : "車両を登録する"}
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HomeQuickActions />
 
-        <h2 className="mt-8 mb-4 text-sm font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-          メニュー
-        </h2>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          {menuItems.map((item) => {
-            const card = (
-              <div className="flex items-start gap-3">
-                <span
-                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl ${item.iconBg}`}
-                  aria-hidden="true"
-                >
-                  {item.emoji}
-                </span>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</h3>
-                  <p className="mt-0.5 text-sm app-text-muted">{item.desc}</p>
-                  {!item.ready && (
-                    <span className="mt-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-                      準備中
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-
-            const cardClassName = `rounded-xl border border-slate-200/80 border-l-4 p-4 shadow-sm transition dark:border-slate-700/80 ${item.accent} ${
-              item.href ? "hover:shadow-md" : "opacity-70"
-            }`;
-
-            if (item.href) {
-              return (
-                <Link key={item.title} href={item.href} className={cardClassName}>
-                  {card}
-                </Link>
-              );
-            }
-
-            return (
-              <div key={item.title} className={cardClassName}>
-                {card}
-              </div>
-            );
-          })}
-        </div>
+        <HomeMonthlyCosts {...monthlyCosts} />
       </AppPage>
     </main>
   );

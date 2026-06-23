@@ -18,6 +18,12 @@ import {
 import { MAX_GAS_STATION_BRAND_KEYWORDS_LENGTH } from "@/lib/fuel-constants";
 import { deletePasskeysForUser } from "@/lib/passkey";
 import {
+  MAX_MAINTENANCE_INTERVAL_DAYS,
+  MAX_MAINTENANCE_INTERVAL_KM,
+  MIN_MAINTENANCE_INTERVAL_DAYS,
+  MIN_MAINTENANCE_INTERVAL_KM,
+} from "@/lib/maintenance-constants";
+import {
   createMaintenanceCategoryForUser,
   deleteMaintenanceCategoryForUser,
   reorderMaintenanceCategoriesForUser,
@@ -28,6 +34,22 @@ export type SettingsActionState = {
   ok: boolean;
   error?: string;
 };
+
+function formatMaintenanceCategoryActionError(error: unknown, fallback: string): string {
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  if (/Unknown argument `intervalKm`|Unknown argument `intervalDays`/.test(error.message)) {
+    return "Prisma クライアントが古い可能性があります。npm run db:generate を実行して開発サーバーを再起動してください。";
+  }
+
+  if (/Unknown column|interval_km|interval_days|P2022/.test(error.message)) {
+    return "データベースの更新が必要です。op signin のあと npm run db:migrate を実行してください。";
+  }
+
+  return fallback;
+}
 
 function parseKeywords(value: FormDataEntryValue | null): string | null {
   const text = String(value ?? "")
@@ -278,6 +300,70 @@ function revalidateMaintenancePaths() {
   revalidatePath("/maintenance/new");
 }
 
+function parseOptionalMaintenanceIntervalKm(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return { value: null } as const;
+  }
+
+  const parsed = Number.parseInt(text, 10);
+
+  if (
+    Number.isNaN(parsed) ||
+    parsed < MIN_MAINTENANCE_INTERVAL_KM ||
+    parsed > MAX_MAINTENANCE_INTERVAL_KM
+  ) {
+    return {
+      error: `交換・整備間隔（距離）は${MIN_MAINTENANCE_INTERVAL_KM.toLocaleString("ja-JP")}〜${MAX_MAINTENANCE_INTERVAL_KM.toLocaleString("ja-JP")} kmの整数で入力してください`,
+    } as const;
+  }
+
+  return { value: parsed } as const;
+}
+
+function parseOptionalMaintenanceIntervalDays(value: FormDataEntryValue | null) {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return { value: null } as const;
+  }
+
+  const parsed = Number.parseInt(text, 10);
+
+  if (
+    Number.isNaN(parsed) ||
+    parsed < MIN_MAINTENANCE_INTERVAL_DAYS ||
+    parsed > MAX_MAINTENANCE_INTERVAL_DAYS
+  ) {
+    return {
+      error: `交換・整備間隔（日数）は${MIN_MAINTENANCE_INTERVAL_DAYS}〜${MAX_MAINTENANCE_INTERVAL_DAYS}日の整数で入力してください`,
+    } as const;
+  }
+
+  return { value: parsed } as const;
+}
+
+function parseMaintenanceCategoryForm(formData: FormData) {
+  const intervalKm = parseOptionalMaintenanceIntervalKm(formData.get("intervalKm"));
+  if ("error" in intervalKm) {
+    return { error: intervalKm.error } as const;
+  }
+
+  const intervalDays = parseOptionalMaintenanceIntervalDays(formData.get("intervalDays"));
+  if ("error" in intervalDays) {
+    return { error: intervalDays.error } as const;
+  }
+
+  return {
+    data: {
+      name: String(formData.get("name") ?? ""),
+      intervalKm: intervalKm.value,
+      intervalDays: intervalDays.value,
+    },
+  } as const;
+}
+
 export async function reorderMaintenanceCategoriesAction(
   orderedCategoryIds: string[],
 ): Promise<SettingsActionState> {
@@ -302,10 +388,13 @@ export async function createMaintenanceCategoryAction(
 ): Promise<SettingsActionState> {
   try {
     const userId = await requireUserId();
-    const result = await createMaintenanceCategoryForUser(
-      userId,
-      String(formData.get("name") ?? ""),
-    );
+    const parsed = parseMaintenanceCategoryForm(formData);
+
+    if ("error" in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+
+    const result = await createMaintenanceCategoryForUser(userId, parsed.data);
 
     if ("error" in result) {
       return { ok: false, error: result.error };
@@ -313,8 +402,11 @@ export async function createMaintenanceCategoryAction(
 
     revalidateMaintenancePaths();
     return { ok: true };
-  } catch {
-    return { ok: false, error: "カテゴリの追加に失敗しました" };
+  } catch (error) {
+    return {
+      ok: false,
+      error: formatMaintenanceCategoryActionError(error, "カテゴリの追加に失敗しました"),
+    };
   }
 }
 
@@ -325,9 +417,13 @@ export async function updateMaintenanceCategoryAction(
 ): Promise<SettingsActionState> {
   try {
     const userId = await requireUserId();
-    const result = await updateMaintenanceCategoryForUser(userId, categoryId, {
-      name: String(formData.get("name") ?? ""),
-    });
+    const parsed = parseMaintenanceCategoryForm(formData);
+
+    if ("error" in parsed) {
+      return { ok: false, error: parsed.error };
+    }
+
+    const result = await updateMaintenanceCategoryForUser(userId, categoryId, parsed.data);
 
     if ("error" in result) {
       return { ok: false, error: result.error };
@@ -335,8 +431,11 @@ export async function updateMaintenanceCategoryAction(
 
     revalidateMaintenancePaths();
     return { ok: true };
-  } catch {
-    return { ok: false, error: "カテゴリの更新に失敗しました" };
+  } catch (error) {
+    return {
+      ok: false,
+      error: formatMaintenanceCategoryActionError(error, "カテゴリの更新に失敗しました"),
+    };
   }
 }
 

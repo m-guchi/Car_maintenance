@@ -4,13 +4,18 @@ import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
 import { MaintenanceList } from "@/components/maintenance-list";
-import { MaintenanceSummary } from "@/components/maintenance-summary";
+import { MaintenanceOdometerChart } from "@/components/maintenance-odometer-chart";
+import { MaintenanceSchedulePanel } from "@/components/maintenance-schedule-panel";
+import { listFuelLogsForVehicle } from "@/lib/fuel-logs";
 import { ensureMaintenanceCategoriesForUser } from "@/lib/maintenance-categories";
 import {
-  computeMaintenanceSummary,
   listMaintenanceLogsForVehicle,
   serializeMaintenanceLogsForClient,
 } from "@/lib/maintenance-logs";
+import {
+  buildMaintenanceChartData,
+  computeMaintenanceSchedule,
+} from "@/lib/maintenance-stats";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { getActiveVehicle } from "@/lib/vehicles";
 
@@ -29,13 +34,38 @@ export default async function MaintenancePage() {
       ? await listMaintenanceLogsForVehicle(userId, activeVehicle.id)
       : null;
 
+  const fuelLogs =
+    userId && activeVehicle
+      ? await listFuelLogsForVehicle(userId, activeVehicle.id)
+      : null;
+
   const clientMaintenanceLogs = maintenanceLogs
     ? serializeMaintenanceLogsForClient(maintenanceLogs)
+    : [];
+
+  const fuelOdometerSamples =
+    fuelLogs?.map((log) => ({
+      date: log.date,
+      odometer: log.odometer,
+      distanceKm: Number(log.distanceKm),
+    })) ?? [];
+
+  const chartData = activeVehicle
+    ? buildMaintenanceChartData(
+        categories,
+        fuelOdometerSamples,
+        clientMaintenanceLogs,
+        activeVehicle.initialOdometer,
+      )
     : null;
 
-  const summary = clientMaintenanceLogs
-    ? computeMaintenanceSummary(clientMaintenanceLogs)
-    : null;
+  const schedule = chartData
+    ? computeMaintenanceSchedule(
+        categories,
+        clientMaintenanceLogs,
+        chartData.currentOdometerKm,
+      )
+    : [];
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -81,17 +111,35 @@ export default async function MaintenancePage() {
               </Link>
             </div>
 
-            {summary && summary.logCount > 0 && <MaintenanceSummary stats={summary} />}
+            <MaintenanceSchedulePanel
+              schedule={schedule}
+              currentOdometerKm={chartData?.currentOdometerKm ?? null}
+            />
+
+            {chartData && (
+              <section className="app-card space-y-4">
+                <div>
+                  <h2 className="app-section-title">走行距離の推移</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    日付（横軸）と総走行距離（縦軸）の面グラフ。色付きの点はメンテナンス実施地点です。
+                  </p>
+                </div>
+                <MaintenanceOdometerChart
+                  timeline={chartData.timeline}
+                  markers={chartData.markers}
+                />
+              </section>
+            )}
 
             <p className="text-sm text-slate-500">
-              カテゴリの追加・編集は
+              カテゴリの追加・編集・交換間隔の設定は
               <Link href="/settings" className="font-medium text-violet-700 hover:underline dark:text-violet-300">
                 設定画面
               </Link>
               から行えます。
             </p>
 
-            {clientMaintenanceLogs && (
+            {clientMaintenanceLogs.length > 0 && (
               <MaintenanceList
                 maintenanceLogs={clientMaintenanceLogs}
                 categories={categories}

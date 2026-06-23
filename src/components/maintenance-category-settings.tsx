@@ -147,7 +147,7 @@ export function MaintenanceCategorySettings({
           </h2>
           <p className="mt-1 text-sm text-slate-500">
             {sectionExpanded
-              ? "整備記録のカテゴリ選択肢と表示順を管理します。カテゴリをタップすると編集画面が開きます。"
+              ? "整備記録のカテゴリ選択肢・表示順・交換・整備間隔（km / 日）を管理します。"
               : `${orderedCategories.length}件のカテゴリを登録中`}
           </p>
         </div>
@@ -208,6 +208,41 @@ export function MaintenanceCategorySettings({
                     className="app-input"
                   />
                 </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="new-category-interval-km" className="app-label">
+                      交換・整備間隔（km）
+                    </label>
+                    <input
+                      id="new-category-interval-km"
+                      name="intervalKm"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      placeholder="例: 5000"
+                      className="app-input"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="new-category-interval-days" className="app-label">
+                      交換・整備間隔（日）
+                    </label>
+                    <input
+                      id="new-category-interval-days"
+                      name="intervalDays"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      step={1}
+                      placeholder="例: 365"
+                      className="app-input"
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500">
+                  間隔は km・日のいずれかまたは両方を登録できます。空欄の項目は使いません。
+                </p>
                 {createState.error && <p className="app-alert-error">{createState.error}</p>}
                 {createState.ok && <p className="app-alert-success">カテゴリを追加しました</p>}
                 <button type="submit" disabled={createPending} className="app-btn-primary">
@@ -346,6 +381,13 @@ function CategoryRow({
                 記録 {logCount}件
               </p>
             )}
+            {(category.intervalKm != null || category.intervalDays != null) && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                {category.intervalKm != null && `${category.intervalKm.toLocaleString("ja-JP")} km`}
+                {category.intervalKm != null && category.intervalDays != null && " · "}
+                {category.intervalDays != null && `${category.intervalDays.toLocaleString("ja-JP")} 日`}
+              </p>
+            )}
           </div>
 
           <ItemExpandMark expanded={expanded} />
@@ -371,6 +413,43 @@ function CategoryRow({
               className="app-input"
             />
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor={`category-interval-km-${category.id}`} className="app-label">
+                交換・整備間隔（km）
+              </label>
+              <input
+                id={`category-interval-km-${category.id}`}
+                name="intervalKm"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                placeholder="例: 5000"
+                defaultValue={category.intervalKm ?? ""}
+                className="app-input"
+              />
+            </div>
+            <div>
+              <label htmlFor={`category-interval-days-${category.id}`} className="app-label">
+                交換・整備間隔（日）
+              </label>
+              <input
+                id={`category-interval-days-${category.id}`}
+                name="intervalDays"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                placeholder="例: 365"
+                defaultValue={category.intervalDays ?? ""}
+                className="app-input"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-slate-500">
+            間隔は km・日のいずれかまたは両方を登録できます。空欄にすると未設定になります。
+          </p>
           {updateState.error && <p className="app-alert-error">{updateState.error}</p>}
           <div className="flex flex-wrap gap-2">
             <button type="submit" disabled={updatePending} className="app-btn-primary px-3 py-2">

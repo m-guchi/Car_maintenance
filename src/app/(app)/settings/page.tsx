@@ -1,21 +1,34 @@
-import Link from "next/link";
-
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
 import { GasStationBrandSettings } from "@/components/gas-station-brand-settings";
+import { MaintenanceCategorySettings } from "@/components/maintenance-category-settings";
+import { PasskeySettings } from "@/components/passkey-settings";
 import { RegisteredGasStationSettings } from "@/components/registered-gas-station-settings";
 import { APP_VERSION } from "@/lib/app-version";
 import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
+import {
+  ensureMaintenanceCategoriesForUser,
+  getMaintenanceLogCountsByCategoryId,
+} from "@/lib/maintenance-categories";
+import { hasRegisteredPasskeys } from "@/lib/passkey";
 import { ensureRegisteredGasStationsForUser } from "@/lib/registered-gas-stations";
 
 export default async function SettingsPage() {
   const session = await auth();
   const userId = session?.user?.id;
+  const email = session?.user?.email;
+  const hasPasskey = email ? await hasRegisteredPasskeys(email) : false;
   const brands = userId ? await ensureGasStationBrandsForUser(userId) : [];
   const registeredStations = userId
     ? await ensureRegisteredGasStationsForUser(userId)
     : [];
+  const maintenanceCategories = userId
+    ? await ensureMaintenanceCategoriesForUser(userId)
+    : [];
+  const maintenanceLogCountByCategoryId = userId
+    ? await getMaintenanceLogCountsByCategoryId(userId)
+    : {};
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -35,6 +48,10 @@ export default async function SettingsPage() {
           stations={registeredStations}
           gasStationBrands={brands}
         />
+        <MaintenanceCategorySettings
+          categories={maintenanceCategories}
+          logCountByCategoryId={maintenanceLogCountByCategoryId}
+        />
 
         <section className="app-card-muted p-6">
           <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -50,17 +67,7 @@ export default async function SettingsPage() {
           </dl>
         </section>
 
-        <section className="app-card-muted border border-dashed border-slate-300 p-6 dark:border-slate-600">
-          <h2 className="text-sm font-medium text-slate-900 dark:text-slate-100">
-            パスキー
-          </h2>
-          <p className="mt-1 text-sm text-slate-500">
-            パスキーの登録はホーム画面から行えます。
-          </p>
-          <Link href="/" className="app-btn-secondary mt-4 inline-flex">
-            ホームへ
-          </Link>
-        </section>
+        <PasskeySettings hasPasskey={hasPasskey} />
       </AppPage>
     </main>
   );

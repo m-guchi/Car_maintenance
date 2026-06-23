@@ -1,5 +1,5 @@
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../generated/client";
 
 import { buildMariaDbAdapterConfig } from "@/lib/database-url";
 

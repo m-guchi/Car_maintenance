@@ -1,11 +1,25 @@
-function formatJstDateTime(date: Date): string {
-  return date.toLocaleString("ja-JP", {
+import { headers } from "next/headers";
+
+async function getClientInfo() {
+  const headersList = await headers();
+  const forwarded = headersList.get("x-forwarded-for");
+  const clientIp =
+    forwarded?.split(",")[0]?.trim() ??
+    headersList.get("x-real-ip") ??
+    "unknown";
+  const userAgent = headersList.get("user-agent") ?? "unknown";
+  return { clientIp, userAgent };
+}
+
+function formatJstTimestamp(): string {
+  return new Date().toLocaleString("ja-JP", {
     timeZone: "Asia/Tokyo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: false,
   });
 }
@@ -36,17 +50,50 @@ async function sendDiscordWebhook(
   }
 }
 
-export async function notifyDiscordSignup(email: string): Promise<void> {
-  await sendDiscordWebhook(
-    process.env.DISCORD_WEBHOOK_SIGNUP_URL,
-    `👤 新規ユーザーが登録されました: ${email}`,
-  );
+function formatProviderLabel(provider?: string | null) {
+  if (provider === "google") return "Google";
+  if (provider === "passkey") return "Passkey";
+  return provider ?? "不明";
 }
 
-export async function notifyDiscordLogin(email: string): Promise<void> {
-  const timestamp = formatJstDateTime(new Date());
-  await sendDiscordWebhook(
-    process.env.DISCORD_WEBHOOK_LOGIN_URL,
-    `🔓 ユーザーがログインしました: ${email}（日時: ${timestamp}）`,
-  );
+export async function notifyDiscordSignup(options: {
+  email?: string | null;
+  name?: string | null;
+  provider?: string | null;
+}): Promise<void> {
+  const { clientIp, userAgent } = await getClientInfo();
+  const timestamp = formatJstTimestamp();
+
+  const content = [
+    "📝 Car Maintenance に新規登録がありました",
+    `**日時**: ${timestamp} (JST)`,
+    `**メール**: ${options.email ?? "不明"}`,
+    `**名前**: ${options.name ?? "不明"}`,
+    `**登録方式**: ${formatProviderLabel(options.provider)}`,
+    `**IP**: ${clientIp}`,
+    `**User-Agent**: ${userAgent}`,
+  ].join("\n");
+
+  await sendDiscordWebhook(process.env.DISCORD_WEBHOOK_SIGNUP_URL, content);
+}
+
+export async function notifyDiscordLogin(options: {
+  email?: string | null;
+  name?: string | null;
+  provider?: string | null;
+}): Promise<void> {
+  const { clientIp, userAgent } = await getClientInfo();
+  const timestamp = formatJstTimestamp();
+
+  const content = [
+    "🔐 Car Maintenance にログインしました",
+    `**日時**: ${timestamp} (JST)`,
+    `**メール**: ${options.email ?? "不明"}`,
+    `**名前**: ${options.name ?? "不明"}`,
+    `**認証方式**: ${formatProviderLabel(options.provider)}`,
+    `**IP**: ${clientIp}`,
+    `**User-Agent**: ${userAgent}`,
+  ].join("\n");
+
+  await sendDiscordWebhook(process.env.DISCORD_WEBHOOK_LOGIN_URL, content);
 }

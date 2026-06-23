@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { TrendLineChart } from "@/components/trend-line-chart";
+import { ScrollableTrendLineChart } from "@/components/scrollable-trend-line-chart";
 import type { FuelEfficiencyPoint } from "@/lib/fuel-stats";
 
 type SerializableFuelEfficiencyPoint = Omit<FuelEfficiencyPoint, "date"> & {
@@ -33,19 +33,13 @@ export function FuelEfficiencyTrendChart({
   );
 
   return (
-    <div className="space-y-3">
-      <TrendLineChart
-        points={points}
-        ariaLabel="燃費推移グラフ"
-        yAxisLabel="燃費（km/L）"
-        formatYTick={formatEfficiencyTick}
-        colorClassName="text-emerald-500"
-        minValueRange={1}
-      />
-
-      {points.length > 0 && (
-        <p className="text-xs text-slate-500">{points.length}件の記録</p>
-      )}
-    </div>
+    <ScrollableTrendLineChart
+      points={points}
+      ariaLabel="燃費推移グラフ"
+      yAxisLabel="燃費（km/L）"
+      formatYTick={formatEfficiencyTick}
+      colorClassName="text-emerald-500"
+      minValueRange={1}
+    />
   );
 }

@@ -201,41 +201,61 @@ function deduplicateStationsByLocation(
   return deduped;
 }
 
-function sortAndLimitStations(
+function sortStationsWithinRadius(
   stations: GasStationSearchResult[],
-  limit: number,
+  radius: number,
+  limit?: number,
 ): GasStationSearchResult[] {
-  const sorted = [...stations].sort(
-    (left, right) => left.distanceMeters - right.distanceMeters,
-  );
+  const sorted = [...stations]
+    .filter((station) => station.distanceMeters <= radius)
+    .sort((left, right) => left.distanceMeters - right.distanceMeters);
 
-  return deduplicateStationsByLocation(sorted).slice(0, limit);
+  const deduped = deduplicateStationsByLocation(sorted);
+
+  if (limit == null || limit <= 0) {
+    return deduped;
+  }
+
+  return deduped.slice(0, limit);
+}
+
+async function fetchOverpassEndpoint(
+  endpoint: string,
+  body: string,
+): Promise<OverpassResponse> {
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+      "User-Agent": OVERPASS_USER_AGENT,
+    },
+    body,
+    cache: "no-store",
+    signal: AbortSignal.timeout(8_000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Overpass request failed: ${response.status}`);
+  }
+
+  return (await response.json()) as OverpassResponse;
 }
 
 async function fetchOverpassData(query: string): Promise<OverpassResponse | null> {
   const body = `data=${encodeURIComponent(query.trim())}`;
 
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Accept: "application/json",
-          "User-Agent": OVERPASS_USER_AGENT,
-        },
-        body,
-        cache: "no-store",
-        signal: AbortSignal.timeout(12_000),
-      });
-
-      if (!response.ok) {
+  try {
+    return await Promise.any(
+      OVERPASS_ENDPOINTS.map((endpoint) => fetchOverpassEndpoint(endpoint, body)),
+    );
+  } catch {
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        return await fetchOverpassEndpoint(endpoint, body);
+      } catch {
         continue;
       }
-
-      return (await response.json()) as OverpassResponse;
-    } catch {
-      continue;
     }
   }
 
@@ -289,7 +309,7 @@ function buildOverpassFuelQuery(lat: number, lon: number, radius: number): strin
     `way["shop"="fuel"]${around}`,
   ];
 
-  return `[out:json][timeout:25];(${fuelTags.join(";")};);out center;`;
+  return `[out:json][timeout:12];(${fuelTags.join(";")};);out center;`;
 }
 
 async function searchWithOverpass(
@@ -315,7 +335,7 @@ async function searchWithNominatim(
   const params = new URLSearchParams({
     format: "json",
     amenity: "fuel",
-    limit: "50",
+    limit: "100",
     viewbox,
     bounded: "1",
   });
@@ -330,7 +350,7 @@ async function searchWithNominatim(
           "Accept-Language": "ja",
         },
         cache: "no-store",
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(8_000),
       },
     );
 
@@ -395,19 +415,307 @@ export async function searchNearbyGasStations(
   lat: number,
   lon: number,
   radius: number,
-  limit = 20,
+  limit?: number,
 ): Promise<GasStationSearchResult[] | null> {
   const overpassStations = await searchWithOverpass(lat, lon, radius);
 
-  if (overpassStations !== null && overpassStations.length > 0) {
-    return sortAndLimitStations(overpassStations, limit);
+  if (overpassStations !== null) {
+    const withinRadius = sortStationsWithinRadius(overpassStations, radius, limit);
+
+    if (withinRadius.length > 0) {
+      return withinRadius;
+    }
   }
 
   const nominatimStations = await searchWithNominatim(lat, lon, radius);
 
   if (!nominatimStations) {
-    return overpassStations;
+    return overpassStations !== null
+      ? sortStationsWithinRadius(overpassStations, radius, limit)
+      : null;
   }
 
-  return sortAndLimitStations(nominatimStations, limit);
+  return sortStationsWithinRadius(nominatimStations, radius, limit);
+}
+
+async function lookupGasStationFromNominatim(
+  osmId: string,
+): Promise<GasStationSearchResult | null> {
+  for (const prefix of ["N", "W", "R"] as const) {
+    const params = new URLSearchParams({
+      format: "json",
+      osm_ids: `${prefix}${osmId}`,
+      addressdetails: "1",
+    });
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/lookup?${params.toString()}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": OVERPASS_USER_AGENT,
+            "Accept-Language": "ja",
+          },
+          cache: "no-store",
+          signal: AbortSignal.timeout(8_000),
+        },
+      );
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const results = (await response.json()) as NominatimResult[];
+
+      if (!results.length) {
+        continue;
+      }
+
+      const result = results[0];
+      const lat = Number.parseFloat(result.lat);
+      const lon = Number.parseFloat(result.lon);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        continue;
+      }
+
+      return {
+        id: Number(osmId),
+        name: getNominatimStationName(result),
+        brand: result.extratags?.brand ?? result.extratags?.operator ?? null,
+        address: getAddressFromNominatim(result),
+        distanceMeters: 0,
+        lat,
+        lon,
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function mapOverpassElementToStation(
+  element: OverpassElement,
+  osmId: string,
+): GasStationSearchResult | null {
+  const coordinates = getOverpassCoordinates(element);
+
+  if (!coordinates) {
+    return null;
+  }
+
+  return {
+    id: Number(osmId),
+    name: getStationNameFromTags(element.tags),
+    brand: element.tags?.brand ?? element.tags?.operator ?? null,
+    address: getAddressFromTags(element.tags),
+    distanceMeters: 0,
+    lat: coordinates.lat,
+    lon: coordinates.lon,
+  };
+}
+
+export async function lookupGasStationByOsmId(
+  osmId: string,
+): Promise<GasStationSearchResult | null> {
+  const numericId = Number(osmId);
+
+  if (!Number.isFinite(numericId) || numericId <= 0) {
+    return null;
+  }
+
+  const nominatimStation = await lookupGasStationFromNominatim(osmId);
+
+  if (nominatimStation) {
+    return nominatimStation;
+  }
+
+  const combinedQuery = `
+    [out:json][timeout:10];
+    (
+      node(${numericId});
+      way(${numericId});
+      relation(${numericId});
+    );
+    out center;
+  `;
+  const combinedData = await fetchOverpassData(combinedQuery);
+
+  if (combinedData?.elements.length) {
+    for (const element of combinedData.elements) {
+      const station = mapOverpassElementToStation(element, osmId);
+
+      if (station) {
+        return station;
+      }
+    }
+  }
+
+  const coordinates = await lookupGasStationsByOsmIds([osmId]);
+  const point = coordinates.get(osmId) ?? coordinates.get(String(numericId));
+
+  if (point) {
+    return {
+      id: numericId,
+      name: "登録店舗",
+      brand: null,
+      address: null,
+      distanceMeters: 0,
+      lat: point.lat,
+      lon: point.lon,
+    };
+  }
+
+  return null;
+}
+
+export async function geocodePlaceName(
+  query: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const trimmed = query.trim();
+
+  if (!trimmed) {
+    return null;
+  }
+
+  const params = new URLSearchParams({
+    format: "json",
+    q: trimmed,
+    limit: "1",
+    countrycodes: "jp",
+  });
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": OVERPASS_USER_AGENT,
+          "Accept-Language": "ja",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(8_000),
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const results = (await response.json()) as NominatimResult[];
+    const first = results[0];
+
+    if (!first) {
+      return null;
+    }
+
+    const lat = Number.parseFloat(first.lat);
+    const lon = Number.parseFloat(first.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return null;
+    }
+
+    return { lat, lon };
+  } catch {
+    return null;
+  }
+}
+
+export async function reverseGeocodeLabel(
+  lat: number,
+  lon: number,
+): Promise<string | null> {
+  const params = new URLSearchParams({
+    format: "json",
+    lat: String(lat),
+    lon: String(lon),
+    zoom: "18",
+    addressdetails: "1",
+  });
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?${params.toString()}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": OVERPASS_USER_AGENT,
+          "Accept-Language": "ja",
+        },
+        cache: "no-store",
+        signal: AbortSignal.timeout(6_000),
+      },
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const result = (await response.json()) as {
+      display_name?: string;
+      address?: Record<string, string>;
+    };
+
+    const address = result.address;
+    const shortLabel = [
+      address?.road,
+      address?.house_number,
+      address?.neighbourhood ?? address?.suburb,
+    ]
+      .filter(Boolean)
+      .join("");
+
+    if (shortLabel) {
+      return shortLabel;
+    }
+
+    const displayName = result.display_name?.split(",")[0]?.trim();
+    return displayName || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function lookupGasStationsByOsmIds(
+  osmIds: string[],
+): Promise<Map<string, { lat: number; lon: number }>> {
+  const numericIds = osmIds
+    .map((id) => Number(id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  if (numericIds.length === 0) {
+    return new Map();
+  }
+
+  const idList = numericIds.join(",");
+  const query = `
+    [out:json][timeout:10];
+  (
+    node(id:${idList});
+    way(id:${idList});
+    relation(id:${idList});
+  );
+  out center;
+  `;
+  const data = await fetchOverpassData(query);
+  const coordinates = new Map<string, { lat: number; lon: number }>();
+
+  if (!data) {
+    return coordinates;
+  }
+
+  for (const element of data.elements) {
+    const point = getOverpassCoordinates(element);
+
+    if (point) {
+      coordinates.set(String(element.id), point);
+    }
+  }
+
+  return coordinates;
 }

@@ -10,7 +10,7 @@ export function AppBottomNav() {
 
   return (
     <nav
-      className="app-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 lg:hidden"
+      className="app-bottom-nav fixed inset-x-0 bottom-0 z-50 border-t border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 lg:hidden"
       aria-label="メインナビゲーション"
     >
       <ul className="mx-auto flex w-full max-w-2xl items-stretch justify-around">

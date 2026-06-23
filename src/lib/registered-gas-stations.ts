@@ -19,6 +19,8 @@ export type { RegisteredGasStationRecord } from "@/lib/registered-gas-station-ty
 function toRecord(station: {
   id: string;
   osmId: string | null;
+  latitude: number | null;
+  longitude: number | null;
   registeredName: string;
   brand: string | null;
   hiddenFromPicker: boolean;
@@ -27,11 +29,32 @@ function toRecord(station: {
   return {
     id: station.id,
     osmId: station.osmId,
+    latitude: station.latitude,
+    longitude: station.longitude,
     registeredName: station.registeredName,
     brand: station.brand,
     hiddenFromPicker: station.hiddenFromPicker,
     displayOrder: station.displayOrder,
   };
+}
+
+function isValidCoordinate(value: number | null | undefined): value is number {
+  return value != null && Number.isFinite(value);
+}
+
+function parseManualLocation(
+  latitude: number | null | undefined,
+  longitude: number | null | undefined,
+): { latitude: number; longitude: number } | null {
+  if (!isValidCoordinate(latitude) || !isValidCoordinate(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return { latitude, longitude };
 }
 
 function toKnownGasStation(station: RegisteredGasStationRecord): KnownGasStation {
@@ -40,6 +63,7 @@ function toKnownGasStation(station: RegisteredGasStationRecord): KnownGasStation
     osmId: station.osmId,
     registeredName: station.registeredName,
     brand: station.brand,
+    displayOrder: station.displayOrder,
   };
 }
 
@@ -235,6 +259,9 @@ export async function updateRegisteredGasStationForUser(
     customBrand?: string;
     storeName: string;
     hiddenFromPicker?: boolean;
+    osmId?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   },
 ) {
   const existing = await prisma.registeredGasStation.findFirst({
@@ -305,12 +332,52 @@ export async function updateRegisteredGasStationForUser(
     return { error: "同じ登録名の店舗が既にあります" } as const;
   }
 
+  const nextOsmId = input.osmId !== undefined ? input.osmId : existing.osmId;
+
+  if (nextOsmId !== existing.osmId && nextOsmId !== null) {
+    const osmConflict = await prisma.registeredGasStation.findFirst({
+      where: {
+        userId,
+        osmId: nextOsmId,
+        NOT: { id: stationId },
+      },
+    });
+
+    if (osmConflict) {
+      return { error: "同じ地図上の店舗が既に登録されています" } as const;
+    }
+  }
+
+  let nextLatitude: number | null = null;
+  let nextLongitude: number | null = null;
+
+  if (nextOsmId) {
+    nextLatitude = null;
+    nextLongitude = null;
+  } else {
+    const manualLocation = parseManualLocation(
+      input.latitude ?? null,
+      input.longitude ?? null,
+    );
+
+    if (manualLocation) {
+      nextLatitude = manualLocation.latitude;
+      nextLongitude = manualLocation.longitude;
+    } else {
+      nextLatitude = existing.latitude;
+      nextLongitude = existing.longitude;
+    }
+  }
+
   const updated = await prisma.registeredGasStation.update({
     where: { id: stationId },
     data: {
       registeredName: nextRegisteredName,
       brand: effectiveBrand,
       hiddenFromPicker: input.hiddenFromPicker ?? existing.hiddenFromPicker,
+      osmId: nextOsmId,
+      latitude: nextLatitude,
+      longitude: nextLongitude,
     },
   });
 
@@ -327,6 +394,7 @@ export async function updateRegisteredGasStationForUser(
     data: {
       gasStationName: nextRegisteredName,
       gasStationBrands: effectiveBrand,
+      gasStationOsmId: nextOsmId,
     },
   });
 
@@ -352,6 +420,34 @@ export async function setRegisteredGasStationHiddenForUser(
   });
 
   return { station: toRecord(updated) } as const;
+}
+
+export async function reorderRegisteredGasStationsForUser(
+  userId: string,
+  orderedStationIds: string[],
+) {
+  const stations = await listRegisteredGasStationsForUser(userId);
+
+  if (orderedStationIds.length !== stations.length) {
+    return { error: "並び順の更新に失敗しました" } as const;
+  }
+
+  const stationIds = new Set(stations.map((station) => station.id));
+
+  if (!orderedStationIds.every((id) => stationIds.has(id))) {
+    return { error: "並び順の更新に失敗しました" } as const;
+  }
+
+  await prisma.$transaction(
+    orderedStationIds.map((id, index) =>
+      prisma.registeredGasStation.update({
+        where: { id },
+        data: { displayOrder: index },
+      }),
+    ),
+  );
+
+  return { ok: true } as const;
 }
 
 export async function deleteRegisteredGasStationForUser(

@@ -7,6 +7,8 @@ import { extractStoreNamePart } from "@/lib/gas-stations";
 export type RegisteredGasStationRecord = {
   id: string;
   osmId: string | null;
+  latitude: number | null;
+  longitude: number | null;
   registeredName: string;
   brand: string | null;
   hiddenFromPicker: boolean;

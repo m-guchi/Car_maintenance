@@ -11,6 +11,7 @@ export type KnownGasStation = {
   osmId: string | null;
   registeredName: string;
   brand: string | null;
+  displayOrder?: number;
 };
 
 export type GasStation = {

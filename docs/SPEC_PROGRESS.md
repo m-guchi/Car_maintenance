@@ -2,7 +2,7 @@
 
 > **他 Agent 向け:** 本ファイルが仕様書（Discord通知機能追加版）に対する実装状況の正本です。  
 > 機能追加・デプロイ完了時は **必ず本ファイルを更新** してください。  
-> **最終更新:** 2026-06-22
+> **最終更新:** 2026-06-23
 
 ## ステータス凡例
 
@@ -15,10 +15,10 @@
 
 ## 全体進捗
 
-**約 55%** — 認証・DB スキーマ・車両管理・給油記録は完了。メンテ UI と本番デプロイは未了。
+**約 65%** — 認証・DB スキーマ・車両管理・給油記録・メンテ UI は完了。本番デプロイは未了。
 
 ```
-[██████████████████████░░░░░░░░] 55%
+[██████████████████████████░░░░] 65%
 ```
 
 | レイヤー | 状態 |
@@ -28,7 +28,7 @@
 | 1Password 開発環境 | ✅ |
 | PWA 雛形 | ⚠️ |
 | 給油 UI | ✅ |
-| メンテ・車両 UI | ⚠️ |
+| メンテ・車両 UI | ✅ |
 | 本番 VPS / CI/CD 運用 | ⚠️ |
 
 ---
@@ -44,7 +44,7 @@
 | NextAuth (Auth.js) | ✅ | `src/auth.ts`, `src/auth.config.ts` |
 | Google OAuth | ✅ | `src/auth.ts` |
 | メール制限 (`ALLOWED_EMAIL`) | ✅ | `src/auth.config.ts` |
-| WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + Google ログイン後の登録導線 (`passkey-register-card.tsx`) |
+| WebAuthn / Passkey | ✅ | Provider + ログイン (`next-auth/webauthn`) + ホーム初回登録 (`passkey-register-card.tsx`) + 設定画面の登録・再設定 (`passkey-settings.tsx`) |
 | Discord Webhook（signup / login 2系統） | ✅ | `src/lib/discord.ts`, `src/auth.ts` events |
 | PWA | ⚠️ | `public/manifest.json`, `public/sw.js`, `public/icons/`, `app-bottom-nav.tsx`, `app-page.tsx` |
 | pm2 | ✅ | `ecosystem.config.js`（本番 PORT 3104 既定） |
@@ -60,8 +60,8 @@
 | `verification_tokens` | ✅ | ✅ | 認証のみ |
 | `authenticators` | ✅ | ✅ | Passkey 登録・ログイン |
 | `vehicles` | ✅ | ✅ | ✅ CRUD (`/vehicles`) |
-| `maintenance_categories` | ✅ | ✅ | ❌ |
-| `maintenance_logs` | ✅ | ✅ | ❌ |
+| `maintenance_categories` | ✅ | ✅ | ✅ 設定画面 CRUD |
+| `maintenance_logs` | ✅ | ✅ | ✅ CRUD + 一覧 (`/maintenance`) |
 | `fuel_logs` | ✅ | ✅ | ✅ CRUD + ダッシュボード (`/fuel`) |
 | `gas_station_brands` | ✅ | ✅ | ✅ 設定画面 CRUD |
 | `registered_gas_stations` | ✅ | ✅ `20250621260000` | ✅ 設定画面 CRUD・給油フォーム連携 |
@@ -76,7 +76,7 @@
 |------|------|------|
 | Google ログイン | ✅ | |
 | 許可外メール拒否 | ✅ | `ALLOWED_EMAIL` |
-| パスキー登録 → 2回目以降顔認証ログイン | ✅ | Google 初回ログイン後ホームで登録、2回目以降 `next-auth/webauthn` でログイン |
+| パスキー登録 → 2回目以降顔認証ログイン | ✅ | Google 初回ログイン後ホームで登録、設定画面で再設定、2回目以降 `next-auth/webauthn` でログイン |
 | Discord 新規登録通知 | ✅ | `events.createUser` → `DISCORD_WEBHOOK_SIGNUP_URL` |
 | Discord ログイン通知 | ✅ | `events.signIn`（`!isNewUser`）→ `DISCORD_WEBHOOK_LOGIN_URL` |
 | 未ログイン時 middleware ガード | ✅ | `src/middleware.ts` |
@@ -85,17 +85,17 @@
 
 | 要件 | 状態 |
 |------|------|
-| 給油入力フォーム | ✅ | `/fuel` フォーム・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択・入力時の燃費自動計算表示 |
+| 給油入力フォーム | ✅ | `/fuel/new` 入力・登録後確認画面・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択・入力時の燃費自動計算表示 |
 | 登録店舗管理（設定画面） | ✅ | `registered-gas-station-settings.tsx`, `registered_gas_stations` テーブル |
-| ダッシュボード（燃費・月別費用・価格推移グラフ・総走行距離・登録以降の走行距離） | ✅ | `fuel-dashboard.tsx`, `FuelMileageSummary`, `trend-line-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx`（月日×値軸の折れ線） |
-| 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-search.tsx`, `/api/gas-stations` |
+| ダッシュボード（走行距離・燃費サマリー、燃費/単価/月別走行距離グラフ） | ✅ | `fuel-dashboard.tsx`, `FuelSummary`, `scrollable-trend-line-chart.tsx`, `monthly-distance-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx` |
+| 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-map-picker.tsx`, `/api/gas-stations`（半径1km全件・中心地点の手動店舗登録・地図折りたたみ） |
 
 ### ③ メンテナンス記録 & カテゴリ動的管理
 
 | 要件 | 状態 |
 |------|------|
-| カテゴリ CRUD（設定画面） | ❌ |
-| メンテナンス記録入力（カテゴリ dropdown） | ❌ |
+| カテゴリ CRUD（設定画面） | ✅ | `maintenance-category-settings.tsx`, `maintenance-categories.ts` |
+| メンテナンス記録入力（カテゴリ dropdown） | ✅ | `/maintenance/new`, `maintenance-form.tsx`, 一覧・編集・削除・まとめて削除 |
 
 ### ④ 車両管理
 
@@ -172,9 +172,10 @@
 ## 主要ファイル索引（Agent 用）
 
 ```
-認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/lib/passkey.ts
+認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/components/passkey-settings.tsx, src/lib/passkey.ts
 車両:     src/app/vehicles/, src/components/vehicle-form.tsx, src/components/vehicle-list.tsx, src/lib/vehicles.ts
 給油:     src/app/(app)/fuel/, src/components/fuel-*.tsx, src/lib/fuel-*.ts, src/app/api/gas-stations/route.ts
+メンテ:   src/app/(app)/maintenance/, src/components/maintenance-*.tsx, src/lib/maintenance-*.ts
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/with-op-prod-db.sh, scripts/prod-db-tunnel.sh, scripts/setup-db.sh
@@ -203,7 +204,6 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 ## 次の推奨タスク（優先順）
 
 1. **本番デプロイ初回設定**（1Password `Car Maintenance` 登録、VPS `scripts/vps-bootstrap.sh`、`main` マージ）
-2. **メンテ記録 + カテゴリ管理**
 
 ---
 
@@ -211,7 +211,20 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-23 | v1.2.0: ホームダッシュボード、メンテナンス記録 UI・カテゴリ管理、給油グラフ再構成（燃費・単価・月別走行距離）、給油フォーム UX 改善、パスキー再設定、登録店舗地図編集、本番 DB 開発接続、次回メンテ予定・走行距離グラフ |
+| 2026-06-23 | 走行距離グラフに表示年の切替を追加（1〜12月＋前年比較折れ線） |
+| 2026-06-23 | ホームダッシュボード（メンテアラート/ようこそ切替、給油・メンテ入力リンク、今月・先月の維持費表示） |
+| 2026-06-23 | 登録店舗編集の地図 UX（手動店舗の座標保存、移動後の周辺検索・読込表示、マーカー整理、表示名省略） |
+| 2026-06-23 | 給油の単価グラフを全体表示のみに変更（店舗別切替を廃止） |
+| 2026-06-23 | 給油グラフを再構成（燃費・単価は1年表示+横スクロール折れ線、走行距離は月別棒+昨年折れ線、月別給油費を廃止） |
+| 2026-06-23 | メンテナンス記録 UI（入力・一覧・編集・削除・まとめて削除）と設定画面のカテゴリ CRUD（初期シード: 洗車・オイル交換・タイヤ交換・車検） |
+| 2026-06-23 | 給油記録 UX 改善（登録後確認画面のコンパクト化、登録済み店舗の距離順リスト・100m強調、地図は「地図から選択」で表示、中心地点の手動店舗登録、半径1km全件検索） |
 | 2026-06-22 | v1.1.0: 給油ダッシュボード強化（燃費・単価の折れ線グラフ、月別給油費の展開表示、走行距離サマリー）、入力時燃費表示、周辺スタンド検索改善 |
+| 2026-06-23 | 給油情報サマリーを統合（走行距離2項目・燃費2項目を各1カードにまとめて表示、累計給油費カードを削除） |
+| 2026-06-23 | 設定画面 UX 改善（セクション折りたたみ、非表示店舗の表示切替、登録店舗の地図位置更新、アプリ情報をパスキー下へ） |
+| 2026-06-23 | 設定画面 UX 改善（項目タップで編集展開、ブランド追加を一覧下へ、登録店舗の並び替え） |
+| 2026-06-23 | パスキー登録・再設定時の Discord ログイン通知を抑制（`linkAccount` で登録フローを判別） |
+| 2026-06-23 | 設定画面でパスキーの登録・再設定（既存パスキー削除後に再登録、`passkey-settings.tsx`） |
 | 2026-06-22 | 燃費の推移グラフを単価推移と同じ折れ線グラフ（月日×燃費）に統一（`TrendLineChart` 共通化） |
 | 2026-06-22 | 周辺ガソリンスタンド検索の精度改善（Overpass 件数上限除去・距離順ソート・`shop=fuel` / relation 対応） |
 | 2026-06-22 | 単価推移グラフを月日（横軸）× 単価（縦軸）に改善し、店舗ごとの切替を追加 |

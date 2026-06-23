@@ -27,12 +27,26 @@ import {
   type FuelLogInput,
 } from "@/lib/fuel-logs";
 import { upsertRegisteredGasStationFromFuelLog } from "@/lib/registered-gas-stations";
+import { computeFuelEfficiencyForLog } from "@/lib/fuel-stats";
 import { getVehicleForUser } from "@/lib/vehicles";
+
+export type FuelLogRegisteredSummary = {
+  date: string;
+  distanceKm: number;
+  odometer: number | null;
+  fuelAmount: number;
+  pricePerLiter: number;
+  totalCost: number;
+  isFull: boolean;
+  gasStationName: string;
+  fuelEfficiency: number | null;
+};
 
 export type FuelActionState = {
   ok: boolean;
   error?: string;
   resetToken?: number;
+  registered?: FuelLogRegisteredSummary;
 };
 
 function parseDate(value: FormDataEntryValue | null) {
@@ -343,7 +357,25 @@ export async function createFuelLogAction(
     revalidatePath("/settings");
     revalidatePath("/");
 
-    return { ok: true, resetToken: Date.now() };
+    return {
+      ok: true,
+      resetToken: Date.now(),
+      registered: {
+        date: parsed.data.date.toISOString(),
+        distanceKm: parsed.data.distanceKm,
+        odometer: parsed.data.odometer ?? null,
+        fuelAmount: parsed.data.fuelAmount,
+        pricePerLiter: parsed.data.pricePerLiter,
+        totalCost: parsed.data.totalCost,
+        isFull: parsed.data.isFull,
+        gasStationName: parsed.data.gasStationName,
+        fuelEfficiency: computeFuelEfficiencyForLog({
+          isFull: parsed.data.isFull,
+          distanceKm: parsed.data.distanceKm,
+          fuelAmount: parsed.data.fuelAmount,
+        }),
+      },
+    };
   } catch {
     return { ok: false, error: "給油記録の登録に失敗しました" };
   }

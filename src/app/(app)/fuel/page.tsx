@@ -3,7 +3,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
-import { FuelDashboard, FuelMileageSummary } from "@/components/fuel-dashboard";
+import { FuelDashboard, FuelSummary } from "@/components/fuel-dashboard";
 import { FuelList } from "@/components/fuel-list";
 import {
   getFuelDashboardForVehicle,
@@ -94,12 +94,7 @@ export default async function FuelPage() {
               </Link>
             </div>
 
-            {dashboardStats && (
-              <FuelMileageSummary
-                totalOdometerKm={dashboardStats.totalOdometerKm}
-                distanceSinceRegistrationKm={dashboardStats.totalDistanceKm}
-              />
-            )}
+            {dashboardStats && <FuelSummary stats={dashboardStats} />}
 
             {dashboardStats && dashboardStats.logCount > 0 && (
               <FuelDashboard stats={dashboardStats} />

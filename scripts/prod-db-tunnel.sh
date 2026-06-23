@@ -7,6 +7,7 @@
 #   npm run db:studio:prod          # 別ターミナルで Studio 等
 #
 # 1Password（.env.op）に SSH_HOST / SSH_USER / SSH_PORT を登録してください。
+# VPS 認証は GitHub Actions と同じ SSH_PRIVATE_KEY（githubaction-sshkey）を推奨。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -45,9 +46,28 @@ exec op run --env-file="$ENV_FILE" -- bash -c '
   LOCAL_PORT="${PROD_DB_LOCAL_PORT:-3307}"
   REMOTE_PORT="${PROD_DB_REMOTE_PORT:-3306}"
 
-  exec ssh -N \
-    -o ExitOnForwardFailure=yes \
-    -o ServerAliveInterval=60 \
+  SSH_KEY_FILE=""
+  cleanup() {
+    if [[ -n "$SSH_KEY_FILE" && -f "$SSH_KEY_FILE" ]]; then
+      rm -f "$SSH_KEY_FILE"
+    fi
+  }
+  trap cleanup EXIT INT TERM
+
+  SSH_OPTS=(
+    -o ExitOnForwardFailure=yes
+    -o ServerAliveInterval=60
+    -o BatchMode=yes
+  )
+
+  if [[ -n "${SSH_PRIVATE_KEY:-}" ]]; then
+    SSH_KEY_FILE="$(mktemp)"
+    chmod 600 "$SSH_KEY_FILE"
+    printf "%s\n" "$SSH_PRIVATE_KEY" > "$SSH_KEY_FILE"
+    SSH_OPTS+=(-i "$SSH_KEY_FILE" -o IdentitiesOnly=yes)
+  fi
+
+  exec ssh -N "${SSH_OPTS[@]}" \
     -p "$SSH_PORT" \
     -L "127.0.0.1:${LOCAL_PORT}:127.0.0.1:${REMOTE_PORT}" \
     "${SSH_USER}@${SSH_HOST}"

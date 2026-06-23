@@ -6,6 +6,7 @@
 #   npm run db:setup
 #
 # 前提: sudo mysql で root 接続できること（MySQL 起動済み）
+# migrate dev はシャドウ DB 上で DDL を実行するため、*.* への ALTER 等が必要（下記 GRANT 参照）
 
 set -euo pipefail
 
@@ -63,12 +64,12 @@ CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${db_password_esc}';
 ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${db_password_esc}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'localhost';
-GRANT CREATE, DROP ON *.* TO '${DB_USER}'@'localhost';
+GRANT CREATE, DROP, ALTER, INDEX, REFERENCES, SELECT, INSERT, UPDATE, DELETE, CREATE TEMPORARY TABLES, LOCK TABLES ON *.* TO '${DB_USER}'@'localhost';
 
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${db_password_esc}';
 ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${db_password_esc}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'127.0.0.1';
-GRANT CREATE, DROP ON *.* TO '${DB_USER}'@'127.0.0.1';
+GRANT CREATE, DROP, ALTER, INDEX, REFERENCES, SELECT, INSERT, UPDATE, DELETE, CREATE TEMPORARY TABLES, LOCK TABLES ON *.* TO '${DB_USER}'@'127.0.0.1';
 
 FLUSH PRIVILEGES;
 EOSQL

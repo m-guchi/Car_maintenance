@@ -36,6 +36,7 @@ export const menuItems: MenuItem[] = [
     desc: "カテゴリ別の整備履歴",
     emoji: "🔧",
     href: "/maintenance",
+    ready: true,
     accent:
       "border-l-violet-400 bg-violet-50/50 hover:border-violet-300 dark:border-l-violet-500 dark:bg-violet-950/30 dark:hover:border-violet-400",
     iconBg: "bg-violet-100 dark:bg-violet-900/40",
@@ -52,7 +53,7 @@ export const menuItems: MenuItem[] = [
   },
   {
     title: "設定",
-    desc: "ブランド・登録店舗・パスキー",
+    desc: "ブランド・登録店舗・メンテカテゴリ・パスキー",
     emoji: "⚙️",
     href: "/settings",
     ready: true,

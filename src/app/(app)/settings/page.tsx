@@ -2,10 +2,15 @@ import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
 import { GasStationBrandSettings } from "@/components/gas-station-brand-settings";
+import { MaintenanceCategorySettings } from "@/components/maintenance-category-settings";
 import { PasskeySettings } from "@/components/passkey-settings";
 import { RegisteredGasStationSettings } from "@/components/registered-gas-station-settings";
 import { APP_VERSION } from "@/lib/app-version";
 import { ensureGasStationBrandsForUser } from "@/lib/gas-station-brands";
+import {
+  ensureMaintenanceCategoriesForUser,
+  getMaintenanceLogCountsByCategoryId,
+} from "@/lib/maintenance-categories";
 import { hasRegisteredPasskeys } from "@/lib/passkey";
 import { ensureRegisteredGasStationsForUser } from "@/lib/registered-gas-stations";
 
@@ -18,6 +23,12 @@ export default async function SettingsPage() {
   const registeredStations = userId
     ? await ensureRegisteredGasStationsForUser(userId)
     : [];
+  const maintenanceCategories = userId
+    ? await ensureMaintenanceCategoriesForUser(userId)
+    : [];
+  const maintenanceLogCountByCategoryId = userId
+    ? await getMaintenanceLogCountsByCategoryId(userId)
+    : {};
 
   return (
     <main className="flex min-h-full flex-1 flex-col">
@@ -36,6 +47,10 @@ export default async function SettingsPage() {
         <RegisteredGasStationSettings
           stations={registeredStations}
           gasStationBrands={brands}
+        />
+        <MaintenanceCategorySettings
+          categories={maintenanceCategories}
+          logCountByCategoryId={maintenanceLogCountByCategoryId}
         />
 
         <section className="app-card-muted p-6">

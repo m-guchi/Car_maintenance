@@ -3,18 +3,12 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
 import { AppPage } from "@/components/app-page";
-import { MaintenanceList } from "@/components/maintenance-list";
-import { MaintenanceSummary } from "@/components/maintenance-summary";
+import { MaintenanceForm } from "@/components/maintenance-form";
 import { ensureMaintenanceCategoriesForUser } from "@/lib/maintenance-categories";
-import {
-  computeMaintenanceSummary,
-  listMaintenanceLogsForVehicle,
-  serializeMaintenanceLogsForClient,
-} from "@/lib/maintenance-logs";
 import { getVehicleSubtitle } from "@/lib/vehicle-display";
 import { getActiveVehicle } from "@/lib/vehicles";
 
-export default async function MaintenancePage() {
+export default async function MaintenanceNewPage() {
   const session = await auth();
   const userId = session?.user?.id;
   const activeVehicle = userId ? await getActiveVehicle(userId) : null;
@@ -24,29 +18,17 @@ export default async function MaintenancePage() {
 
   const categories = userId ? await ensureMaintenanceCategoriesForUser(userId) : [];
 
-  const maintenanceLogs =
-    userId && activeVehicle
-      ? await listMaintenanceLogsForVehicle(userId, activeVehicle.id)
-      : null;
-
-  const clientMaintenanceLogs = maintenanceLogs
-    ? serializeMaintenanceLogsForClient(maintenanceLogs)
-    : null;
-
-  const summary = clientMaintenanceLogs
-    ? computeMaintenanceSummary(clientMaintenanceLogs)
-    : null;
-
   return (
     <main className="flex min-h-full flex-1 flex-col">
       <AppHeader
-        title="メンテナンス"
+        title="メンテナンスを記録"
         subtitle={
           activeVehicle
             ? `${activeVehicle.name}${vehicleSubtitle ? `（${vehicleSubtitle}）` : ""}`
-            : "カテゴリ別の整備履歴"
+            : undefined
         }
-        showHomeLink
+        backHref="/maintenance"
+        backLabel="メンテナンスに戻る"
         user={{
           name: session?.user?.name,
           email: session?.user?.email,
@@ -71,33 +53,7 @@ export default async function MaintenancePage() {
             </Link>
           </section>
         ) : (
-          <>
-            <div className="flex">
-              <Link
-                href="/maintenance/new"
-                className="app-btn-primary w-full bg-violet-600 shadow-violet-600/20 hover:bg-violet-700 sm:ml-auto sm:w-auto dark:bg-violet-500 dark:hover:bg-violet-400"
-              >
-                メンテナンスを記録する
-              </Link>
-            </div>
-
-            {summary && summary.logCount > 0 && <MaintenanceSummary stats={summary} />}
-
-            <p className="text-sm text-slate-500">
-              カテゴリの追加・編集は
-              <Link href="/settings" className="font-medium text-violet-700 hover:underline dark:text-violet-300">
-                設定画面
-              </Link>
-              から行えます。
-            </p>
-
-            {clientMaintenanceLogs && (
-              <MaintenanceList
-                maintenanceLogs={clientMaintenanceLogs}
-                categories={categories}
-              />
-            )}
-          </>
+          <MaintenanceForm vehicleId={activeVehicle.id} categories={categories} />
         )}
       </AppPage>
     </main>

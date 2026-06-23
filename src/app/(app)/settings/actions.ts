@@ -16,6 +16,12 @@ import {
 } from "@/lib/registered-gas-stations";
 import { MAX_GAS_STATION_BRAND_KEYWORDS_LENGTH } from "@/lib/fuel-constants";
 import { deletePasskeysForUser } from "@/lib/passkey";
+import {
+  createMaintenanceCategoryForUser,
+  deleteMaintenanceCategoryForUser,
+  reorderMaintenanceCategoriesForUser,
+  updateMaintenanceCategoryForUser,
+} from "@/lib/maintenance-categories";
 
 export type SettingsActionState = {
   ok: boolean;
@@ -215,5 +221,91 @@ export async function deletePasskeysAction(): Promise<SettingsActionState> {
     return { ok: true };
   } catch {
     return { ok: false, error: "パスキーの削除に失敗しました" };
+  }
+}
+
+function revalidateMaintenancePaths() {
+  revalidatePath("/settings");
+  revalidatePath("/maintenance");
+  revalidatePath("/maintenance/new");
+}
+
+export async function reorderMaintenanceCategoriesAction(
+  orderedCategoryIds: string[],
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await reorderMaintenanceCategoriesForUser(userId, orderedCategoryIds);
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateMaintenancePaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "並び順の更新に失敗しました" };
+  }
+}
+
+export async function createMaintenanceCategoryAction(
+  _prevState: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await createMaintenanceCategoryForUser(
+      userId,
+      String(formData.get("name") ?? ""),
+    );
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateMaintenancePaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "カテゴリの追加に失敗しました" };
+  }
+}
+
+export async function updateMaintenanceCategoryAction(
+  categoryId: string,
+  _prevState: SettingsActionState,
+  formData: FormData,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await updateMaintenanceCategoryForUser(userId, categoryId, {
+      name: String(formData.get("name") ?? ""),
+    });
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateMaintenancePaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "カテゴリの更新に失敗しました" };
+  }
+}
+
+export async function deleteMaintenanceCategoryAction(
+  categoryId: string,
+): Promise<SettingsActionState> {
+  try {
+    const userId = await requireUserId();
+    const result = await deleteMaintenanceCategoryForUser(userId, categoryId);
+
+    if ("error" in result) {
+      return { ok: false, error: result.error };
+    }
+
+    revalidateMaintenancePaths();
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "カテゴリの削除に失敗しました" };
   }
 }

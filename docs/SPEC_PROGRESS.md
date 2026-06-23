@@ -15,10 +15,10 @@
 
 ## 全体進捗
 
-**約 55%** — 認証・DB スキーマ・車両管理・給油記録は完了。メンテ UI と本番デプロイは未了。
+**約 65%** — 認証・DB スキーマ・車両管理・給油記録・メンテ UI は完了。本番デプロイは未了。
 
 ```
-[██████████████████████░░░░░░░░] 55%
+[██████████████████████████░░░░] 65%
 ```
 
 | レイヤー | 状態 |
@@ -28,7 +28,7 @@
 | 1Password 開発環境 | ✅ |
 | PWA 雛形 | ⚠️ |
 | 給油 UI | ✅ |
-| メンテ・車両 UI | ⚠️ |
+| メンテ・車両 UI | ✅ |
 | 本番 VPS / CI/CD 運用 | ⚠️ |
 
 ---
@@ -60,8 +60,8 @@
 | `verification_tokens` | ✅ | ✅ | 認証のみ |
 | `authenticators` | ✅ | ✅ | Passkey 登録・ログイン |
 | `vehicles` | ✅ | ✅ | ✅ CRUD (`/vehicles`) |
-| `maintenance_categories` | ✅ | ✅ | ❌ |
-| `maintenance_logs` | ✅ | ✅ | ❌ |
+| `maintenance_categories` | ✅ | ✅ | ✅ 設定画面 CRUD |
+| `maintenance_logs` | ✅ | ✅ | ✅ CRUD + 一覧 (`/maintenance`) |
 | `fuel_logs` | ✅ | ✅ | ✅ CRUD + ダッシュボード (`/fuel`) |
 | `gas_station_brands` | ✅ | ✅ | ✅ 設定画面 CRUD |
 | `registered_gas_stations` | ✅ | ✅ `20250621260000` | ✅ 設定画面 CRUD・給油フォーム連携 |
@@ -94,8 +94,8 @@
 
 | 要件 | 状態 |
 |------|------|
-| カテゴリ CRUD（設定画面） | ❌ |
-| メンテナンス記録入力（カテゴリ dropdown） | ❌ |
+| カテゴリ CRUD（設定画面） | ✅ | `maintenance-category-settings.tsx`, `maintenance-categories.ts` |
+| メンテナンス記録入力（カテゴリ dropdown） | ✅ | `/maintenance/new`, `maintenance-form.tsx`, 一覧・編集・削除・まとめて削除 |
 
 ### ④ 車両管理
 
@@ -175,6 +175,7 @@
 認証:     src/auth.ts, src/auth.config.ts, src/middleware.ts, src/app/login/, src/components/passkey-register-card.tsx, src/components/passkey-settings.tsx, src/lib/passkey.ts
 車両:     src/app/vehicles/, src/components/vehicle-form.tsx, src/components/vehicle-list.tsx, src/lib/vehicles.ts
 給油:     src/app/(app)/fuel/, src/components/fuel-*.tsx, src/lib/fuel-*.ts, src/app/api/gas-stations/route.ts
+メンテ:   src/app/(app)/maintenance/, src/components/maintenance-*.tsx, src/lib/maintenance-*.ts
 Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/with-op-prod-db.sh, scripts/prod-db-tunnel.sh, scripts/setup-db.sh
@@ -203,7 +204,6 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 ## 次の推奨タスク（優先順）
 
 1. **本番デプロイ初回設定**（1Password `Car Maintenance` 登録、VPS `scripts/vps-bootstrap.sh`、`main` マージ）
-2. **メンテ記録 + カテゴリ管理**
 
 ---
 
@@ -211,6 +211,7 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-23 | メンテナンス記録 UI（入力・一覧・編集・削除・まとめて削除）と設定画面のカテゴリ CRUD（初期シード: 洗車・オイル交換・タイヤ交換・車検） |
 | 2026-06-23 | 給油記録 UX 改善（登録後確認画面のコンパクト化、登録済み店舗の距離順リスト・100m強調、地図は「地図から選択」で表示、中心地点の手動店舗登録、半径1km全件検索） |
 | 2026-06-22 | v1.1.0: 給油ダッシュボード強化（燃費・単価の折れ線グラフ、月別給油費の展開表示、走行距離サマリー）、入力時燃費表示、周辺スタンド検索改善 |
 | 2026-06-23 | 給油情報サマリーを統合（走行距離2項目・燃費2項目を各1カードにまとめて表示、累計給油費カードを削除） |

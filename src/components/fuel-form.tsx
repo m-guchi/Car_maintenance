@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import {
   createFuelLogAction,
   type FuelActionState,
 } from "@/app/(app)/fuel/actions";
 import { FuelFormFields } from "@/components/fuel-form-fields";
+import { FuelLogConfirmPanel } from "@/components/fuel-log-confirm-panel";
 import type { GasStationBrandRecord } from "@/lib/gas-station-brand-types";
 import type { KnownGasStation } from "@/lib/gas-stations";
 
@@ -31,13 +32,34 @@ export function FuelForm({
   const router = useRouter();
   const boundAction = createFuelLogAction.bind(null, vehicleId);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
+  const [formKey, setFormKey] = useState("new");
+  const [dismissedConfirmationToken, setDismissedConfirmationToken] = useState<
+    number | null
+  >(null);
+
+  const showConfirmation =
+    state.ok &&
+    state.registered &&
+    state.resetToken != null &&
+    state.resetToken !== dismissedConfirmationToken;
 
   useEffect(() => {
-    if (state.ok) {
-      router.push("/fuel");
+    if (showConfirmation) {
       router.refresh();
     }
-  }, [state.ok, router]);
+  }, [showConfirmation, router]);
+
+  if (showConfirmation && state.registered) {
+    return (
+      <FuelLogConfirmPanel
+        summary={state.registered}
+        onRecordAnother={() => {
+          setDismissedConfirmationToken(state.resetToken ?? null);
+          setFormKey(String(Date.now()));
+        }}
+      />
+    );
+  }
 
   return (
     <section className="app-card border-l-4 border-l-amber-500">
@@ -48,7 +70,7 @@ export function FuelForm({
 
       <form action={formAction} className="mt-5 space-y-4">
         <FuelFormFields
-          key={state.resetToken ?? "new"}
+          key={formKey}
           previousOdometer={previousOdometer}
           knownGasStations={knownGasStations}
           pickerGasStations={pickerGasStations}
@@ -56,10 +78,6 @@ export function FuelForm({
         />
 
         {state.error && <p className="app-alert-error">{state.error}</p>}
-
-        {state.ok && (
-          <p className="app-alert-success">給油記録を登録しました。一覧へ移動します...</p>
-        )}
 
         <button
           type="submit"

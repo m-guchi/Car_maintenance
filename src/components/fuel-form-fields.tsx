@@ -145,6 +145,7 @@ export function FuelFormFields({
   );
   const [mapStationName, setMapStationName] = useState("");
   const [isFull, setIsFull] = useState(fuelLog?.isFull ?? true);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const visiblePickerStations = pickerGasStations ?? knownGasStations;
 
   const effectiveBrand =
@@ -221,7 +222,7 @@ export function FuelFormFields({
 
   return (
     <div className="space-y-4">
-      <div>
+      <div className="min-w-0 w-full max-w-full sm:max-w-xs">
         <label htmlFor={`${idPrefix}-date`} className={labelClassName}>
           給油日 <span className="text-red-500">*</span>
         </label>
@@ -233,7 +234,7 @@ export function FuelFormFields({
           defaultValue={
             fuelLog ? formatDateForInput(fuelLog.date) : formatDateForInput(new Date())
           }
-          className={inputClassName}
+          className="app-input-date"
         />
       </div>
 
@@ -404,7 +405,7 @@ export function FuelFormFields({
             スタンド情報 <span className="text-red-500">*</span>
           </h3>
           <p className="mt-1 text-xs text-slate-500">
-            登録済み店舗から選ぶか、地図から店舗を選び、登録する店舗名を確認・編集してください。ブランドは
+            登録済み店舗から選ぶか、「地図から選択」で店舗を指定してください。ブランドは
             <Link href="/settings" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
               設定
             </Link>
@@ -418,12 +419,38 @@ export function FuelFormFields({
           onSelectStation={handleSelectRegisteredStation}
         />
 
-        <GasStationMapPicker
-          selectedStationId={selectedStationId}
-          gasStationBrands={gasStationBrands}
-          knownStations={knownGasStations}
-          onSelectStation={handleSelectStation}
-        />
+        {!showMapPicker ? (
+          <button
+            type="button"
+            onClick={() => setShowMapPicker(true)}
+            className="app-btn-secondary w-full text-sm"
+          >
+            地図から選択
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                地図からスタンドを選択
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowMapPicker(false)}
+                className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              >
+                閉じる
+              </button>
+            </div>
+            <GasStationMapPicker
+              enabled={showMapPicker}
+              selectedStationId={selectedStationId}
+              selectedStationKey={selectedStationKey}
+              gasStationBrands={gasStationBrands}
+              knownStations={knownGasStations}
+              onSelectStation={handleSelectStation}
+            />
+          </div>
+        )}
 
         <input
           type="hidden"
@@ -490,7 +517,7 @@ export function FuelFormFields({
               value={storeName}
               onChange={(event) => setStoreName(event.target.value)}
               placeholder={
-                selectedStationId != null
+                selectedStationId != null || mapStationName
                   ? "例: 寺町通店"
                   : "地図から選択するか直接入力"
               }

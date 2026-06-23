@@ -19,6 +19,8 @@ type RegisteredGasStationPickerProps = {
 
 type SortMode = "loading" | "distance" | "displayOrder";
 
+const INITIAL_VISIBLE_COUNT = 3;
+
 function toStationWithoutDistance(
   station: KnownGasStation,
 ): RegisteredGasStationWithDistance {
@@ -76,6 +78,7 @@ export function RegisteredGasStationPicker({
   const [sortMode, setSortMode] = useState<SortMode>(
     knownStations.length > 0 ? "loading" : "displayOrder",
   );
+  const [showAll, setShowAll] = useState(false);
 
   const stationSignature = knownStations
     .map((station) => getStationSelectionKey(station))
@@ -115,6 +118,7 @@ export function RegisteredGasStationPicker({
         return;
       }
 
+      setShowAll(false);
       setSortMode("loading");
 
       const blockedMessage = getGeolocationBlockedMessage();
@@ -154,6 +158,19 @@ export function RegisteredGasStationPicker({
         ? "（現在地から近い順）"
         : "（設定の順）";
 
+  const selectedIndex =
+    selectedStationKey == null
+      ? -1
+      : stations.findIndex(
+          (station) => getStationSelectionKey(station) === selectedStationKey,
+        );
+  const isExpanded =
+    showAll || (selectedIndex >= INITIAL_VISIBLE_COUNT && selectedIndex !== -1);
+  const visibleStations = isExpanded
+    ? stations
+    : stations.slice(0, INITIAL_VISIBLE_COUNT);
+  const hiddenCount = stations.length - INITIAL_VISIBLE_COUNT;
+
   return (
     <div className="space-y-2">
       <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -161,7 +178,7 @@ export function RegisteredGasStationPicker({
       </p>
 
       <ul className="space-y-2">
-        {stations.map((known) => {
+        {visibleStations.map((known) => {
           const stationKey = getStationSelectionKey(known);
           const isSelected = stationKey === selectedStationKey;
 
@@ -211,6 +228,16 @@ export function RegisteredGasStationPicker({
           );
         })}
       </ul>
+
+      {!isExpanded && hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowAll(true)}
+          className="w-full rounded-xl border border-dashed border-slate-300 py-2.5 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800/50"
+        >
+          もっと表示する（あと{hiddenCount}件）
+        </button>
+      )}
     </div>
   );
 }

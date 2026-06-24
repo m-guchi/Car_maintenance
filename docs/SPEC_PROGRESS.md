@@ -2,7 +2,7 @@
 
 > **他 Agent 向け:** 本ファイルが仕様書（Discord通知機能追加版）に対する実装状況の正本です。  
 > 機能追加・デプロイ完了時は **必ず本ファイルを更新** してください。  
-> **最終更新:** 2026-06-23
+> **最終更新:** 2026-06-24
 
 ## ステータス凡例
 
@@ -88,7 +88,8 @@
 | 給油入力フォーム | ✅ | `/fuel/new` 入力・登録後確認画面・一覧・編集・削除・まとめて削除・登録済み店舗クイック選択・入力時の燃費自動計算表示 |
 | 登録店舗管理（設定画面） | ✅ | `registered-gas-station-settings.tsx`, `registered_gas_stations` テーブル |
 | ダッシュボード（走行距離・燃費サマリー、燃費/単価/月別走行距離グラフ） | ✅ | `fuel-dashboard.tsx`, `FuelSummary`, `scrollable-trend-line-chart.tsx`, `monthly-distance-chart.tsx`, `fuel-price-trend-chart.tsx`, `fuel-efficiency-trend-chart.tsx` |
-| 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-map-picker.tsx`, `/api/gas-stations`（半径1km全件・中心地点の手動店舗登録・地図折りたたみ） |
+| 周辺ガソリンスタンド検索（Geolocation） | ✅ | `gas-station-map-picker.tsx`, `/api/gas-stations`（半径3km検索・近い順10件表示・中心地点の手動店舗登録・地図折りたたみ） |
+| 登録済み店舗の現在地からの距離表示 | ✅ | `registered-gas-station-picker.tsx`, `/api/registered-gas-stations/nearby`（保存座標または OSM 座標から距離計算） |
 
 ### ③ メンテナンス記録 & カテゴリ動的管理
 
@@ -125,8 +126,9 @@
 | `develop` で開発 → `main` で安定版 | ✅ | `develop` push 済み (`origin/develop`) |
 | `main` マージ時 GitHub Actions デプロイ | ⚠️ | workflow 実装済み。1Password / VPS 設定後に `main` push で検証 |
 | `main` マージ時 Git tag / GitHub Release | ⚠️ | `package.json` version から `v*` タグ自動作成 + Release（Portfolio 同様） |
+| CI Discord 通知 | ✅ | `.github/workflows/ci.yml`（失敗時 + `main` 向け PR のみ） |
 
-デプロイ手順（workflow）: tag → release → CI で `npm run build:ci` → tar 転送 → VPS で `.env` 同期 → `prisma migrate deploy` → `pm2 reload`
+デプロイ手順（workflow）: tag → build → deploy →（成功時のみ）release。build で `npm run build:ci` → tar 転送 → VPS で `.env` 同期 → `prisma migrate deploy` → `pm2 reload`
 
 ### ⑦ 1Password & 機密情報
 
@@ -180,7 +182,7 @@ Discord:  src/lib/discord.ts
 DB:       prisma/schema.prisma, src/lib/prisma.ts, src/lib/database-url.ts
 1Password: .env.op.example, scripts/with-op-env.sh, scripts/with-op-prod-db.sh, scripts/prod-db-tunnel.sh, scripts/setup-db.sh
 PWA:      public/manifest.json, public/sw.js, src/components/app-bottom-nav.tsx, src/components/app-page.tsx
-DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/release.yml, .github/deploy.env.tpl, scripts/construct-database-url.sh, scripts/vps-bootstrap.sh
+DevOps:   ecosystem.config.js, .github/workflows/ci.yml, .github/workflows/deploy.yml, .github/workflows/release.yml, .github/deploy.env.tpl, .github/ci.env.tpl, scripts/construct-database-url.sh, scripts/vps-bootstrap.sh
 進捗正本: docs/SPEC_PROGRESS.md  ← このファイル
 ```
 
@@ -211,6 +213,8 @@ DevOps:   ecosystem.config.js, .github/workflows/deploy.yml, .github/workflows/r
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-24 | デプロイ workflow: `deploy` 成功後のみ GitHub Release 作成（失敗時は Release しない） |
+| 2026-06-24 | CI Discord 通知（失敗時 + `main` 向け PR のみ、MyRoom / Asset Manager 同様） |
 | 2026-06-23 | v1.2.1: CI/build 修正（lint・TypeScript）、本番デプロイ時のマイグレーションドリフト自動解消 |
 | 2026-06-23 | v1.2.0: ホームダッシュボード、メンテナンス記録 UI・カテゴリ管理、給油グラフ再構成（燃費・単価・月別走行距離）、給油フォーム UX 改善、パスキー再設定、登録店舗地図編集、本番 DB 開発接続、次回メンテ予定・走行距離グラフ |
 | 2026-06-23 | 走行距離グラフに表示年の切替を追加（1〜12月＋前年比較折れ線） |

@@ -25,8 +25,20 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const swHeaders = [
+      {
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+    ];
+
     if (process.env.NODE_ENV !== "development") {
-      return [];
+      return swHeaders;
     }
 
     return [
@@ -34,6 +46,7 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: [{ key: "Cache-Control", value: "no-store" }],
       },
+      ...swHeaders,
     ];
   },
   webpack: (config, { dev }) => {

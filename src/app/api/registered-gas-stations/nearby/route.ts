@@ -1,7 +1,7 @@
 import { auth } from "@/auth";
 import { formatDistanceKm } from "@/lib/fuel-display";
 import { lookupGasStationsByOsmIds } from "@/lib/gas-stations-search";
-import { listPickerGasStationsForUser } from "@/lib/registered-gas-stations";
+import { listRegisteredGasStationsForUser } from "@/lib/registered-gas-stations";
 
 function haversineDistanceMeters(
   lat1: number,
@@ -37,48 +37,60 @@ export async function GET(request: Request) {
     return Response.json({ error: "位置情報が不正です" }, { status: 400 });
   }
 
-  const stations = await listPickerGasStationsForUser(session.user.id);
+  const stations = (await listRegisteredGasStationsForUser(session.user.id)).filter(
+    (station) => !station.hiddenFromPicker,
+  );
   const osmIds = stations
-    .map((station) => station.osmId)
-    .filter((osmId): osmId is string => Boolean(osmId));
+    .filter(
+      (station) =>
+        station.osmId &&
+        (station.latitude == null || station.longitude == null),
+    )
+    .map((station) => station.osmId!);
   const coordinates = await lookupGasStationsByOsmIds(osmIds);
 
   const withDistance = stations.map((station) => {
-    if (!station.osmId) {
-      return {
-        ...station,
-        distanceMeters: null,
-        distanceLabel: null,
-        isNearby: false,
-        displayOrder: station.displayOrder,
-      };
+    const base = {
+      id: station.id,
+      osmId: station.osmId,
+      registeredName: station.registeredName,
+      brand: station.brand,
+      displayOrder: station.displayOrder,
+    };
+
+    let pointLat = station.latitude;
+    let pointLon = station.longitude;
+
+    if ((pointLat == null || pointLon == null) && station.osmId) {
+      const point = coordinates.get(station.osmId);
+
+      if (point) {
+        pointLat = point.lat;
+        pointLon = point.lon;
+      }
     }
 
-    const point = coordinates.get(station.osmId);
-
-    if (!point) {
+    if (pointLat == null || pointLon == null) {
       return {
-        ...station,
+        ...base,
         distanceMeters: null,
         distanceLabel: null,
         isNearby: false,
-        displayOrder: station.displayOrder,
       };
     }
 
     const distanceMeters = haversineDistanceMeters(
       lat,
       lon,
-      point.lat,
-      point.lon,
+      pointLat,
+      pointLon,
     );
 
     return {
-      ...station,
+      ...base,
       distanceMeters,
       distanceLabel: formatDistanceKm(distanceMeters),
       isNearby: distanceMeters <= 100,
-      displayOrder: station.displayOrder,
     };
   });
 

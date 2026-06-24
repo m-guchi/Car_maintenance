@@ -57,6 +57,15 @@ export async function ensureGasStationBrandsForUser(
     return existing;
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true },
+  });
+  if (!user) {
+    // 例: ローカル DB リセット後に古い JWT が残っている
+    return [];
+  }
+
   await prisma.gasStationBrand.createMany({
     data: DEFAULT_GAS_STATION_BRAND_SEEDS.map((seed, index) => ({
       userId,

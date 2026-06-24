@@ -2,9 +2,12 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 
+import mariadb, { type Connection } from "mariadb";
+
 import { prisma } from "../src/lib/prisma";
 import {
   buildDatabaseUrl,
+  buildMariaDbAdapterConfig,
   DEV_DB_HOST,
   DEV_DB_PORT,
   getDatabaseConfig,
@@ -135,6 +138,42 @@ async function main() {
     }
   }
 
+  const adapterConfig = buildMariaDbAdapterConfig();
+  let rawConn: Connection | undefined;
+
+  try {
+    rawConn = await mariadb.createConnection(adapterConfig);
+    await rawConn.query("SELECT 1");
+    console.log("MariaDB 直結:", "OK");
+  } catch (error) {
+    console.error("");
+    console.error("MariaDB 直結:", "NG");
+    if (error instanceof Error) {
+      console.error(error.message);
+    }
+    console.error("");
+    console.error("確認:");
+    if (useProdDb) {
+      console.error("  → 1Password の DB_HOST / DB_PORT / db-user / db-password を確認");
+      console.error("  → VPS ローカルのみ待受なら npm run db:tunnel:prod を起動");
+    } else {
+      const errno =
+        error && typeof error === "object" && "errno" in error
+          ? Number((error as { errno?: number }).errno)
+          : undefined;
+      if (errno === 1045) {
+        console.error("  → 認証失敗: 1Password の DB_USER / DB_PASSWORD と MySQL が不一致");
+      } else if (errno === 1049) {
+        console.error("  → データベース未作成");
+      }
+      console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+      console.error("  → 初回なら npm run db:migrate も実行");
+    }
+    process.exit(1);
+  } finally {
+    await rawConn?.end();
+  }
+
   const prismaClient = prisma;
 
   try {
@@ -161,8 +200,22 @@ async function main() {
       console.error("  → 1Password の DB_HOST / DB_PORT / db-user / db-password を確認");
       console.error("  → VPS ローカルのみ待受なら npm run db:tunnel:prod を起動");
     } else {
-      console.error("  → 1Password の db-user / db-password / db-name を確認");
-      console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+      const errno =
+        error && typeof error === "object" && "errno" in error
+          ? Number((error as { errno?: number }).errno)
+          : undefined;
+      if (errno === 1045) {
+        console.error("  → 認証失敗: 1Password の DB_USER / DB_PASSWORD と MySQL が不一致");
+        console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+      } else if (errno === 1049) {
+        console.error("  → データベース未作成: npm run db:setup → npm run db:migrate");
+      } else if (error instanceof Error && error.message.includes("pool timeout")) {
+        console.error("  → 上の「MariaDB 直結」のエラーを確認（pool timeout は接続失敗の二次症状）");
+        console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+      } else {
+        console.error("  → 1Password の db-user / db-password / db-name を確認");
+        console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+      }
     }
     process.exit(1);
   } finally {

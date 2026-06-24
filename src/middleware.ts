@@ -22,13 +22,13 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
 
   if (isPublicPath(pathname)) {
-    if (req.auth && pathname === "/login") {
+    if (req.auth?.user?.id && pathname === "/login") {
       return NextResponse.redirect(new URL("/", req.url));
     }
     return NextResponse.next();
   }
 
-  if (!req.auth) {
+  if (!req.auth?.user?.id) {
     const loginUrl = new URL("/login", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

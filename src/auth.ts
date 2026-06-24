@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google";
 import Passkey from "next-auth/providers/passkey";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
-import { authConfig } from "@/auth.config";
+import { applyTokenToSession, authConfig } from "@/auth.config";
 import { applyAuthUrlEnv } from "@/lib/auth-url";
 import { notifyDiscordLogin, notifyDiscordSignup } from "@/lib/discord";
 import { prisma } from "@/lib/prisma";
@@ -17,6 +17,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   experimental: { enableWebAuthn: true },
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, ...rest }) {
+      const nextToken = await authConfig.callbacks.jwt({ token, user, ...rest });
+
+      if (user) {
+        return nextToken;
+      }
+
+      const userId = nextToken.id ?? nextToken.sub;
+      if (!userId) {
+        return nextToken;
+      }
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: userId as string },
+        select: { id: true },
+      });
+      if (!dbUser) {
+        // DB リセットや DB 切替後に古い JWT が残っている場合は再ログインさせる
+        return {};
+      }
+
+      return nextToken;
+    },
+    session({ session, token }) {
+      const nextSession = applyTokenToSession(session, token);
+      if (!token.id) {
+        return { expires: nextSession.expires };
+      }
+      return nextSession;
+    },
+  },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,

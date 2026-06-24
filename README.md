@@ -2,18 +2,22 @@
 
 個人用の車両メンテナンス・給油記録アプリ。スマートフォン向け PWA として利用できる Next.js アプリケーションです。
 
+**現在のバージョン:** v1.2.1（[`package.json`](./package.json) の `version` が正本）
+
 ## 機能
 
 | 機能 | 説明 |
 |------|------|
 | 認証 | Google ログイン、パスキー（WebAuthn）、許可メールアドレスによるアクセス制限 |
-| 車両管理 | 車両の登録・編集・削除、アクティブ車両の切り替え |
-| 給油記録 | 給油入力・一覧・燃費ダッシュボード、周辺ガソリンスタンド検索 |
-| 設定 | ガソリンスタンドブランド・登録店舗の管理 |
-| 通知 | 新規登録・ログイン時の Discord Webhook 通知 |
-| PWA | `manifest.json` と Service Worker によるホーム画面追加対応 |
+| ホーム | メンテアラート / ようこそ表示、給油・メンテのクイック入力、今月・先月の維持費サマリー |
+| 車両管理 | 車両の登録・編集・削除、アクティブ車両の切り替え（複数台対応） |
+| 給油記録 | 入力・一覧・編集・削除、燃費ダッシュボード（燃費・単価・月別走行距離グラフ）、周辺ガソリンスタンド検索、登録店舗の距離順表示 |
+| メンテナンス | カテゴリ別の整備履歴（入力・一覧・編集・削除）、次回メンテ予定アラート、走行距離グラフ |
+| 設定 | ガソリンスタンドブランド・登録店舗・メンテカテゴリの管理、パスキー登録・再設定 |
+| 通知 | 新規登録・ログイン時の Discord Webhook 通知、CI 結果の Discord 通知 |
+| PWA | `manifest.json`、Service Worker（更新検知・自動リロード）、モバイルファースト UI |
 
-メンテナンス記録・カテゴリ管理はスキーマのみ整備済みで、UI は未実装です。実装状況の詳細は [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) を参照してください。
+実装状況の詳細は [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) を参照してください。
 
 ## 技術スタック
 
@@ -21,8 +25,9 @@
 - **バックエンド:** Next.js Server Actions / Route Handlers
 - **認証:** NextAuth.js（Auth.js）— Google OAuth、WebAuthn
 - **データベース:** MySQL + Prisma 7
+- **地図:** Leaflet + OpenStreetMap（Overpass API）
 - **機密情報:** 1Password CLI（`.env.op`）
-- **本番運用:** VPS + Apache リバースプロキシ + pm2、GitHub Actions によるデプロイ
+- **本番運用:** VPS + Apache リバースプロキシ + pm2、GitHub Actions による CI/CD
 
 ## 必要条件
 
@@ -128,14 +133,22 @@ npm run dev:prod-db:tunnel
 
 | ブランチ | 用途 |
 |----------|------|
-| `develop` | 機能開発 |
+| `develop` | 機能開発（push 時に CI 実行） |
 | `main` | 安定版。マージ時に GitHub Actions が VPS へデプロイ |
 
-## バージョン管理
+## CI / CD
+
+### CI（`.github/workflows/ci.yml`）
+
+- **トリガー:** `develop` への push、`main` / `develop` 向け PR
+- **内容:** ESLint、本番ビルド（`build:ci`）
+- **Discord 通知:** `develop` push 時は失敗のみ、`main` 向け PR では成功・失敗・キャンセルを通知
+
+### バージョン管理
 
 バージョンの正本は [`package.json`](./package.json) の `version` フィールドです。`main` へのマージ時、GitHub Actions がこの値から `v1.0.1` 形式の Git タグと GitHub Release を自動作成します。
 
-### リリース手順
+#### リリース手順
 
 `develop` でバージョンを上げてから `main` にマージします。タグは CI が `main` 上で付けるため、ローカルでは **`--no-git-tag-version`** を付けて `package.json` / `package-lock.json` だけ更新してください（ローカルでタグを作ると、マージ後のデプロイが「タグが既に別コミットを指している」として失敗します）。
 
@@ -162,12 +175,13 @@ git push origin develop
 `main` マージ後の流れ:
 
 1. `deploy.yml` が `package.json` のバージョンから `v*` タグを作成
-2. 同 workflow 内で GitHub Release を作成
-3. ビルド・VPS デプロイを実行
+2. CI でビルド
+3. VPS へ転送し `.env` を同期 → `prisma migrate deploy` → `pm2 reload`
+4. **デプロイ成功後のみ** GitHub Release を作成
 
 同じバージョン番号で再デプロイする場合は、先にバージョンを上げてから `main` にマージする必要があります（タグが既に別コミットを指していると workflow がエラーになります）。
 
-### コマンド早見表
+#### コマンド早見表
 
 | コマンド | 用途 |
 |----------|------|
@@ -182,10 +196,11 @@ git push origin develop
 
 `main` ブランチへの push で GitHub Actions が次を実行します。
 
-1. `package.json` のバージョンから Git タグ・GitHub Release を作成
-2. CI でビルド
+1. `package.json` のバージョンから Git タグを作成
+2. CI でビルド（`npm run build:ci`）
 3. VPS へ転送し `.env` を同期
 4. `prisma migrate deploy` → `pm2 reload`
+5. デプロイ成功後に GitHub Release を作成
 
 初回セットアップは `scripts/vps-bootstrap.sh` と 1Password の本番シークレット登録が必要です。詳細は [`docs/SPEC_PROGRESS.md`](./docs/SPEC_PROGRESS.md) の「開発・運用フロー、インフラ」セクションを参照してください。
 
@@ -195,14 +210,18 @@ git push origin develop
 
 ```
 src/
-  app/           # Next.js App Router（ページ・API）
-  auth.ts        # NextAuth 設定
-  components/    # UI コンポーネント
-  lib/           # ビジネスロジック・ユーティリティ
-prisma/          # スキーマ・マイグレーション
-scripts/         # 開発・デプロイ用シェルスクリプト
-public/          # 静的ファイル・PWA アセット
-docs/            # 仕様・進捗ドキュメント
+  app/
+    (app)/         # 認証済みアプリ（ホーム・給油・メンテ・車両・設定）
+    login/         # ログイン画面
+    api/           # Route Handlers（認証・ガソリンスタンド検索・ジオコーディング）
+  auth.ts          # NextAuth 設定
+  components/      # UI コンポーネント
+  lib/             # ビジネスロジック・ユーティリティ
+prisma/            # スキーマ・マイグレーション
+scripts/           # 開発・デプロイ用シェルスクリプト
+public/            # 静的ファイル・PWA アセット
+.github/workflows/ # CI（ci.yml）・デプロイ（deploy.yml）
+docs/              # 仕様・進捗ドキュメント
 ```
 
 ## ドキュメント

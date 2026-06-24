@@ -246,12 +246,15 @@ function buildStationPopupHtml(
   return `<div style="min-width:150px;max-width:220px;font-family:system-ui,-apple-system,sans-serif;line-height:1.4;color:#0f172a;">${parts.join("")}</div>`;
 }
 
+const MAP_SEARCH_RADIUS_METERS = 3_000;
+const MAP_SEARCH_RESULT_LIMIT = 10;
+
 async function fetchNearbyStations(lat: number, lon: number): Promise<GasStation[]> {
   const params = new URLSearchParams({
     lat: String(lat),
     lon: String(lon),
-    radius: "1000",
-    limit: "0",
+    radius: String(MAP_SEARCH_RADIUS_METERS),
+    limit: String(MAP_SEARCH_RESULT_LIMIT),
   });
   const response = await fetch(`/api/gas-stations?${params.toString()}`, {
     signal: AbortSignal.timeout(30_000),
@@ -1352,17 +1355,12 @@ export function GasStationMapPicker({
 
       {phase === "ready" && stations.length === 0 && (
         <p className="text-sm text-slate-500">
-          半径1km以内にガソリンスタンドが見つかりませんでした。「地図の中心を店舗として登録」するか、ブランドと店舗名を直接入力してください。
+          半径3km以内にガソリンスタンドが見つかりませんでした。「地図の中心を店舗として登録」するか、ブランドと店舗名を直接入力してください。
         </p>
       )}
 
       {stations.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
-            半径1km以内のスタンド {stations.length} 件（地図の⛽または一覧から選択）
-          </p>
-
-          <ul className="max-h-48 space-y-2 overflow-y-auto">
+        <ul className="max-h-48 space-y-2 overflow-y-auto">
             {stations.map((station) => {
               const isSelected = toOsmId(station.id) === selectedStationId;
               const { registrationName, mapName, isKnown } = getStationDisplayInfo(
@@ -1420,8 +1418,7 @@ export function GasStationMapPicker({
                 </li>
               );
             })}
-          </ul>
-        </div>
+        </ul>
       )}
     </div>
   );

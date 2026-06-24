@@ -3,7 +3,7 @@ import Google from "next-auth/providers/google";
 import Passkey from "next-auth/providers/passkey";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
-import { authConfig } from "@/auth.config";
+import { applyTokenToSession, authConfig } from "@/auth.config";
 import { applyAuthUrlEnv } from "@/lib/auth-url";
 import { notifyDiscordLogin, notifyDiscordSignup } from "@/lib/discord";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +43,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return nextToken;
     },
     session({ session, token }) {
-      const nextSession = authConfig.callbacks.session({ session, token });
+      const nextSession = applyTokenToSession(session, token);
       if (!token.id) {
         return { expires: nextSession.expires };
       }

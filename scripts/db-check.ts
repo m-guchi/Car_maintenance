@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 
-import mariadb from "mariadb";
+import mariadb, { type Connection } from "mariadb";
 
 import { prisma } from "../src/lib/prisma";
 import {
@@ -139,7 +139,7 @@ async function main() {
   }
 
   const adapterConfig = buildMariaDbAdapterConfig();
-  let rawConn: mariadb.Connection | undefined;
+  let rawConn: Connection | undefined;
 
   try {
     rawConn = await mariadb.createConnection(adapterConfig);

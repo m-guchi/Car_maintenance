@@ -107,6 +107,15 @@ export function RegisteredGasStationPicker({
             return;
           }
 
+          const hasDistance = sortedStations.some(
+            (station) => station.distanceMeters != null,
+          );
+
+          if (!hasDistance) {
+            finishDisplayOrder();
+            return;
+          }
+
           setSortMode("distance");
           setStations(sortedStations);
         })

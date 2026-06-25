@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { formatDistanceKm } from "@/lib/fuel-display";
 import { lookupGasStationsByOsmIds } from "@/lib/gas-stations-search";
+import { prisma } from "@/lib/prisma";
 import { listRegisteredGasStationsForUser } from "@/lib/registered-gas-stations";
 
 function haversineDistanceMeters(
@@ -49,50 +50,66 @@ export async function GET(request: Request) {
     .map((station) => station.osmId!);
   const coordinates = await lookupGasStationsByOsmIds(osmIds);
 
-  const withDistance = stations.map((station) => {
-    const base = {
-      id: station.id,
-      osmId: station.osmId,
-      registeredName: station.registeredName,
-      brand: station.brand,
-      displayOrder: station.displayOrder,
-    };
+  const withDistance = await Promise.all(
+    stations.map(async (station) => {
+      const base = {
+        id: station.id,
+        osmId: station.osmId,
+        registeredName: station.registeredName,
+        brand: station.brand,
+        displayOrder: station.displayOrder,
+      };
 
-    let pointLat = station.latitude;
-    let pointLon = station.longitude;
+      let pointLat = station.latitude;
+      let pointLon = station.longitude;
 
-    if ((pointLat == null || pointLon == null) && station.osmId) {
-      const point = coordinates.get(station.osmId);
+      if ((pointLat == null || pointLon == null) && station.osmId) {
+        const point =
+          coordinates.get(station.osmId) ??
+          coordinates.get(String(Number(station.osmId)));
 
-      if (point) {
-        pointLat = point.lat;
-        pointLon = point.lon;
+        if (point) {
+          pointLat = point.lat;
+          pointLon = point.lon;
+        }
       }
-    }
 
-    if (pointLat == null || pointLon == null) {
+      if (pointLat == null || pointLon == null) {
+        return {
+          ...base,
+          distanceMeters: null,
+          distanceLabel: null,
+          isNearby: false,
+        };
+      }
+
+      if (
+        station.latitude == null ||
+        station.longitude == null
+      ) {
+        void prisma.registeredGasStation
+          .update({
+            where: { id: station.id },
+            data: { latitude: pointLat, longitude: pointLon },
+          })
+          .catch(() => {});
+      }
+
+      const distanceMeters = haversineDistanceMeters(
+        lat,
+        lon,
+        pointLat,
+        pointLon,
+      );
+
       return {
         ...base,
-        distanceMeters: null,
-        distanceLabel: null,
-        isNearby: false,
+        distanceMeters,
+        distanceLabel: formatDistanceKm(distanceMeters),
+        isNearby: distanceMeters <= 100,
       };
-    }
-
-    const distanceMeters = haversineDistanceMeters(
-      lat,
-      lon,
-      pointLat,
-      pointLon,
-    );
-
-    return {
-      ...base,
-      distanceMeters,
-      distanceLabel: formatDistanceKm(distanceMeters),
-      isNearby: distanceMeters <= 100,
-    };
-  });
+    }),
+  );
 
   withDistance.sort((left, right) => {
     if (left.distanceMeters == null && right.distanceMeters == null) {

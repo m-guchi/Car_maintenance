@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 
 import {
   deleteMaintenanceLogAction,
@@ -214,10 +214,40 @@ export function MaintenanceList({
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const filterCategories = useMemo(() => {
+    const categoryIdsInLogs = new Set(
+      maintenanceLogs.map((log) => log.categoryId),
+    );
+
+    return categories
+      .filter((category) => categoryIdsInLogs.has(category.id))
+      .sort((left, right) => left.displayOrder - right.displayOrder);
+  }, [categories, maintenanceLogs]);
+
+  const filteredLogs = useMemo(() => {
+    if (!selectedCategoryId) {
+      return maintenanceLogs;
+    }
+
+    return maintenanceLogs.filter(
+      (log) => log.categoryId === selectedCategoryId,
+    );
+  }, [maintenanceLogs, selectedCategoryId]);
 
   const selectedCount = selectedIds.size;
   const allSelected =
-    maintenanceLogs.length > 0 && selectedCount === maintenanceLogs.length;
+    filteredLogs.length > 0 && selectedCount === filteredLogs.length;
+
+  function handleCategoryFilterClick(categoryId: string) {
+    setSelectedCategoryId((current) =>
+      current === categoryId ? null : categoryId,
+    );
+    setSelectedIds(new Set());
+    setConfirmingBulkDelete(false);
+    setBulkDeleteError(null);
+  }
 
   function enterSelectionMode() {
     setSelectionMode(true);
@@ -247,7 +277,7 @@ export function MaintenanceList({
   }
 
   function selectAll() {
-    setSelectedIds(new Set(maintenanceLogs.map((log) => log.id)));
+    setSelectedIds(new Set(filteredLogs.map((log) => log.id)));
   }
 
   function clearSelection() {
@@ -313,7 +343,13 @@ export function MaintenanceList({
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="app-section-title">整備履歴（{maintenanceLogs.length}件）</h2>
+        <h2 className="app-section-title">
+          整備履歴（
+          {selectedCategoryId
+            ? `${filteredLogs.length}件 / 全${maintenanceLogs.length}件`
+            : `${maintenanceLogs.length}件`}
+          ）
+        </h2>
         {!selectionMode ? (
           <button
             type="button"
@@ -333,6 +369,42 @@ export function MaintenanceList({
           </button>
         )}
       </div>
+
+      {filterCategories.length > 1 && (
+        <div className="space-y-2">
+          <p className="text-xs text-slate-500">
+            {selectedCategoryId
+              ? "同じカテゴリをもう一度タップするとすべて表示に戻ります"
+              : "カテゴリをタップすると、その整備記録だけを表示します"}
+          </p>
+          <ul className="flex flex-wrap gap-2">
+            {filterCategories.map((category) => {
+              const isSelected = selectedCategoryId === category.id;
+              const isDimmed =
+                selectedCategoryId != null && selectedCategoryId !== category.id;
+
+              return (
+                <li key={category.id}>
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryFilterClick(category.id)}
+                    aria-pressed={isSelected}
+                    className={`inline-flex min-h-9 items-center rounded-full px-2.5 py-1 text-xs transition ${
+                      isSelected
+                        ? "bg-violet-600 text-white ring-2 ring-violet-300 dark:bg-violet-500 dark:ring-violet-700"
+                        : isDimmed
+                          ? "bg-slate-100 text-slate-400 opacity-60 dark:bg-slate-800 dark:text-slate-500"
+                          : "bg-violet-100 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {selectionMode && (
         <div className="app-card space-y-3 p-3">
@@ -373,16 +445,22 @@ export function MaintenanceList({
         </div>
       )}
 
-      {maintenanceLogs.map((maintenanceLog) => (
-        <MaintenanceLogCard
-          key={maintenanceLog.id}
-          maintenanceLog={maintenanceLog}
-          categories={categories}
-          selectionMode={selectionMode}
-          selected={selectedIds.has(maintenanceLog.id)}
-          onToggleSelect={() => toggleSelect(maintenanceLog.id)}
-        />
-      ))}
+      {filteredLogs.length === 0 ? (
+        <p className="app-card-muted border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-600">
+          このカテゴリの整備記録はありません
+        </p>
+      ) : (
+        filteredLogs.map((maintenanceLog) => (
+          <MaintenanceLogCard
+            key={maintenanceLog.id}
+            maintenanceLog={maintenanceLog}
+            categories={categories}
+            selectionMode={selectionMode}
+            selected={selectedIds.has(maintenanceLog.id)}
+            onToggleSelect={() => toggleSelect(maintenanceLog.id)}
+          />
+        ))
+      )}
     </section>
   );
 }

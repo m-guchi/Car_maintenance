@@ -1,7 +1,10 @@
 "use client";
 
 import type { MaintenanceCategoryRecord } from "@/lib/maintenance-category-types";
-import { MAX_MAINTENANCE_NOTES_LENGTH } from "@/lib/maintenance-constants";
+import {
+  MAX_MAINTENANCE_NOTES_LENGTH,
+  MIN_MAINTENANCE_COST,
+} from "@/lib/maintenance-constants";
 import type { MaintenanceLogClientRecord } from "@/lib/maintenance-types";
 import { formatDateForInput } from "@/lib/vehicle-display";
 
@@ -92,12 +95,17 @@ export function MaintenanceFormFields({
           type="number"
           inputMode="numeric"
           required
-          min={1}
+          min={MIN_MAINTENANCE_COST}
           step={1}
           placeholder="例: 8000"
-          defaultValue={maintenanceLog?.cost ?? ""}
+          defaultValue={
+            maintenanceLog !== undefined ? maintenanceLog.cost : ""
+          }
           className="app-input"
         />
+        <p className="mt-1 text-xs text-slate-500">
+          車検などと同時に実施した作業は、別カテゴリの記録で0円と入力できます
+        </p>
       </div>
 
       <div>

@@ -4,7 +4,7 @@ import net from "node:net";
 
 import mariadb, { type Connection } from "mariadb";
 
-import { prisma } from "../src/lib/prisma";
+import { createPrismaClient } from "../src/lib/prisma";
 import {
   buildDatabaseUrl,
   buildMariaDbAdapterConfig,
@@ -104,6 +104,14 @@ async function main() {
   }
 
   if (!useProdDb) {
+    if (process.env.SKIP_MYSQL_ENSURE !== "1") {
+      try {
+        execSync("bash scripts/ensure-mysql.sh", { stdio: "inherit" });
+      } catch {
+        // ensure-mysql.sh が失敗した場合は下のチェックで詳細を出す
+      }
+    }
+
     const mysqlLocal = isMysqlListeningLocally();
     console.log("ローカル MySQL:", mysqlLocal ? "起動中" : "未起動");
 
@@ -111,6 +119,7 @@ async function main() {
       console.error("");
       console.error("NG: ローカル MySQL が見つかりません。");
       console.error("  → sudo service mysql start");
+      console.error("  → WSL 再起動後は MySQL が停止していることがあります");
       process.exit(1);
     }
 
@@ -174,7 +183,7 @@ async function main() {
     await rawConn?.end();
   }
 
-  const prismaClient = prisma;
+  const prismaClient = createPrismaClient();
 
   try {
     await prismaClient.$queryRaw`SELECT 1`;
@@ -210,8 +219,8 @@ async function main() {
       } else if (errno === 1049) {
         console.error("  → データベース未作成: npm run db:setup → npm run db:migrate");
       } else if (error instanceof Error && error.message.includes("pool timeout")) {
-        console.error("  → 上の「MariaDB 直結」のエラーを確認（pool timeout は接続失敗の二次症状）");
-        console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");
+        console.error("  → MySQL 起動直後の場合は npm run dev を再実行");
+        console.error("  → 上の「MariaDB 直結」が OK なら npm run db:setup を再実行");
       } else {
         console.error("  → 1Password の db-user / db-password / db-name を確認");
         console.error("  → npm run db:setup を再実行（パスワードを MySQL に同期）");

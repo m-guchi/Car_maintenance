@@ -2,6 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  getMaintenanceCategoryColor,
+  getMaintenanceCategoryColorStyle,
+} from "@/lib/maintenance-category-colors";
 import { formatOdometer } from "@/lib/vehicle-display";
 import type {
   MaintenanceChartMarker,
@@ -15,18 +19,6 @@ type MaintenanceOdometerChartProps = {
 
 const AREA_CHART_STROKE = "#64748b";
 const AREA_CHART_FILL_CLASS = "fill-slate-500/15 dark:fill-slate-400/20";
-
-/** 面グラフ（スレート）と被らないメンテナンスマーカー用パレット */
-const MARKER_COLORS = [
-  "#059669",
-  "#d97706",
-  "#dc2626",
-  "#2563eb",
-  "#db2777",
-  "#0891b2",
-  "#65a30d",
-  "#ea580c",
-];
 
 function formatMonthDay(isoDate: string): string {
   return new Intl.DateTimeFormat("ja-JP", {
@@ -256,7 +248,7 @@ export function MaintenanceOdometerChart({
               cx={x}
               cy={y}
               r="6"
-              fill={MARKER_COLORS[marker.colorIndex % MARKER_COLORS.length]}
+              fill={getMaintenanceCategoryColor(marker.colorIndex)}
               stroke="#ffffff"
               strokeWidth="2"
             />
@@ -305,6 +297,7 @@ export function MaintenanceOdometerChart({
               const isSelected = selectedCategoryId === marker.categoryId;
               const isDimmed =
                 selectedCategoryId != null && selectedCategoryId !== marker.categoryId;
+              const colorStyle = getMaintenanceCategoryColorStyle(marker.colorIndex);
 
               return (
                 <li key={marker.categoryId}>
@@ -312,20 +305,28 @@ export function MaintenanceOdometerChart({
                     type="button"
                     onClick={() => handleLegendClick(marker.categoryId)}
                     aria-pressed={isSelected}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition ${
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition"
+                    style={
                       isSelected
-                        ? "bg-slate-900 text-white ring-2 ring-slate-400 dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-500"
+                        ? {
+                            backgroundColor: colorStyle.filterSelectedBackground,
+                            color: colorStyle.filterSelectedText,
+                            boxShadow: `0 0 0 2px ${colorStyle.color}`,
+                          }
                         : isDimmed
-                          ? "bg-slate-100 text-slate-400 opacity-60 dark:bg-slate-800 dark:text-slate-500"
-                          : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    }`}
+                          ? {
+                              backgroundColor: colorStyle.filterDimmedBackground,
+                              color: colorStyle.filterDimmedText,
+                            }
+                          : {
+                              backgroundColor: colorStyle.filterIdleBackground,
+                              color: colorStyle.filterIdleText,
+                            }
+                    }
                   >
                     <span
                       className="inline-block h-2.5 w-2.5 rounded-full"
-                      style={{
-                        backgroundColor:
-                          MARKER_COLORS[marker.colorIndex % MARKER_COLORS.length],
-                      }}
+                      style={{ backgroundColor: colorStyle.color }}
                       aria-hidden
                     />
                     {marker.categoryName}

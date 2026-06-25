@@ -14,6 +14,10 @@ import { DeleteConfirmPanel } from "@/components/delete-confirm-panel";
 import { MaintenanceFormFields } from "@/components/maintenance-form-fields";
 import { formatCurrency } from "@/lib/fuel-display";
 import type { MaintenanceCategoryRecord } from "@/lib/maintenance-category-types";
+import {
+  buildMaintenanceCategoryColorIndexById,
+  getMaintenanceCategoryColorStyleById,
+} from "@/lib/maintenance-category-colors";
 import type { MaintenanceLogClientRecord } from "@/lib/maintenance-types";
 import { formatDateJa, formatOdometer } from "@/lib/vehicle-display";
 
@@ -72,12 +76,14 @@ function MaintenanceEditForm({
 function MaintenanceLogCard({
   maintenanceLog,
   categories,
+  categoryColorIndexById,
   selectionMode,
   selected,
   onToggleSelect,
 }: {
   maintenanceLog: MaintenanceLogClientRecord;
   categories: MaintenanceCategoryRecord[];
+  categoryColorIndexById: Map<string, number>;
   selectionMode: boolean;
   selected: boolean;
   onToggleSelect: () => void;
@@ -87,6 +93,10 @@ function MaintenanceLogCard({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const categoryColorStyle = getMaintenanceCategoryColorStyleById(
+    maintenanceLog.categoryId,
+    categoryColorIndexById,
+  );
 
   function handleDeleteClick() {
     setDeleteError(null);
@@ -121,8 +131,13 @@ function MaintenanceLogCard({
       className={`app-card border-l-4 p-5 ${
         selectionMode && selected
           ? "border-l-blue-500 ring-2 ring-blue-200 dark:ring-blue-800"
-          : "border-l-violet-400"
+          : ""
       }`}
+      style={
+        selectionMode && selected
+          ? undefined
+          : { borderLeftColor: categoryColorStyle.color }
+      }
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -154,7 +169,18 @@ function MaintenanceLogCard({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className="inline-flex items-center rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">
+        <span
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium"
+          style={{
+            backgroundColor: categoryColorStyle.badgeBackground,
+            color: categoryColorStyle.badgeText,
+          }}
+        >
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ backgroundColor: categoryColorStyle.color }}
+            aria-hidden
+          />
           {maintenanceLog.categoryName}
         </span>
       </div>
@@ -215,6 +241,11 @@ export function MaintenanceList({
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const categoryColorIndexById = useMemo(
+    () => buildMaintenanceCategoryColorIndexById(categories),
+    [categories],
+  );
 
   const filterCategories = useMemo(() => {
     const categoryIdsInLogs = new Set(
@@ -382,6 +413,10 @@ export function MaintenanceList({
               const isSelected = selectedCategoryId === category.id;
               const isDimmed =
                 selectedCategoryId != null && selectedCategoryId !== category.id;
+              const colorStyle = getMaintenanceCategoryColorStyleById(
+                category.id,
+                categoryColorIndexById,
+              );
 
               return (
                 <li key={category.id}>
@@ -389,14 +424,30 @@ export function MaintenanceList({
                     type="button"
                     onClick={() => handleCategoryFilterClick(category.id)}
                     aria-pressed={isSelected}
-                    className={`inline-flex min-h-9 items-center rounded-full px-2.5 py-1 text-xs transition ${
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition"
+                    style={
                       isSelected
-                        ? "bg-violet-600 text-white ring-2 ring-violet-300 dark:bg-violet-500 dark:ring-violet-700"
+                        ? {
+                            backgroundColor: colorStyle.filterSelectedBackground,
+                            color: colorStyle.filterSelectedText,
+                            boxShadow: `0 0 0 2px ${colorStyle.color}`,
+                          }
                         : isDimmed
-                          ? "bg-slate-100 text-slate-400 opacity-60 dark:bg-slate-800 dark:text-slate-500"
-                          : "bg-violet-100 text-violet-800 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-200 dark:hover:bg-violet-900/60"
-                    }`}
+                          ? {
+                              backgroundColor: colorStyle.filterDimmedBackground,
+                              color: colorStyle.filterDimmedText,
+                            }
+                          : {
+                              backgroundColor: colorStyle.filterIdleBackground,
+                              color: colorStyle.filterIdleText,
+                            }
+                    }
                   >
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: colorStyle.color }}
+                      aria-hidden
+                    />
                     {category.name}
                   </button>
                 </li>
@@ -455,6 +506,7 @@ export function MaintenanceList({
             key={maintenanceLog.id}
             maintenanceLog={maintenanceLog}
             categories={categories}
+            categoryColorIndexById={categoryColorIndexById}
             selectionMode={selectionMode}
             selected={selectedIds.has(maintenanceLog.id)}
             onToggleSelect={() => toggleSelect(maintenanceLog.id)}

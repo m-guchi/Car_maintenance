@@ -97,6 +97,9 @@
 |------|------|
 | カテゴリ CRUD（設定画面） | ✅ | `maintenance-category-settings.tsx`, `maintenance-categories.ts` |
 | メンテナンス記録入力（カテゴリ dropdown） | ✅ | `/maintenance/new`, `maintenance-form.tsx`, 一覧・編集・削除・まとめて削除 |
+| メンテナンス費用 0 円登録（同時作業の記録用） | ✅ | `MIN_MAINTENANCE_COST = 0`, フォーム・Server Action バリデーション |
+| 整備履歴のカテゴリフィルター | ✅ | `maintenance-list.tsx`（カテゴリタップで絞り込み） |
+| カテゴリ色の統一（グラフ凡例・整備履歴） | ✅ | `maintenance-category-colors.ts` |
 
 ### ④ 車両管理
 
@@ -213,6 +216,9 @@ DevOps:   ecosystem.config.js, .github/workflows/ci.yml, .github/workflows/deplo
 
 | 日付 | 内容 |
 |------|------|
+| 2026-06-25 | メンテナンスのカテゴリ色をグラフ凡例と整備履歴で統一 |
+| 2026-06-25 | 整備履歴にカテゴリフィルターを追加（タップで絞り込み・再タップで全件表示） |
+| 2026-06-25 | メンテナンス費用の 0 円登録を許可（車検などと同時作業の記録用） |
 | 2026-06-24 | デプロイ workflow: `deploy` 成功後のみ GitHub Release 作成（失敗時は Release しない） |
 | 2026-06-24 | CI Discord 通知（失敗時 + `main` 向け PR のみ、MyRoom / Asset Manager 同様） |
 | 2026-06-23 | v1.2.1: CI/build 修正（lint・TypeScript）、本番デプロイ時のマイグレーションドリフト自動解消 |

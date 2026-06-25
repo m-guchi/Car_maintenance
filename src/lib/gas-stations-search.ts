@@ -681,17 +681,33 @@ export async function reverseGeocodeLabel(
   }
 }
 
+function hasCoordinateForOsmId(
+  coordinates: Map<string, { lat: number; lon: number }>,
+  osmId: string,
+): boolean {
+  return (
+    coordinates.has(osmId) ||
+    coordinates.has(String(Number(osmId)))
+  );
+}
+
 export async function lookupGasStationsByOsmIds(
   osmIds: string[],
 ): Promise<Map<string, { lat: number; lon: number }>> {
-  const numericIds = osmIds
-    .map((id) => Number(id))
-    .filter((id) => Number.isFinite(id) && id > 0);
+  const uniqueOsmIds = [
+    ...new Set(
+      osmIds.filter((id) => {
+        const numericId = Number(id);
+        return Number.isFinite(numericId) && numericId > 0;
+      }),
+    ),
+  ];
 
-  if (numericIds.length === 0) {
+  if (uniqueOsmIds.length === 0) {
     return new Map();
   }
 
+  const numericIds = uniqueOsmIds.map((id) => Number(id));
   const idList = numericIds.join(",");
   const query = `
     [out:json][timeout:10];
@@ -705,15 +721,25 @@ export async function lookupGasStationsByOsmIds(
   const data = await fetchOverpassData(query);
   const coordinates = new Map<string, { lat: number; lon: number }>();
 
-  if (!data) {
-    return coordinates;
+  if (data) {
+    for (const element of data.elements) {
+      const point = getOverpassCoordinates(element);
+
+      if (point) {
+        coordinates.set(String(element.id), point);
+      }
+    }
   }
 
-  for (const element of data.elements) {
-    const point = getOverpassCoordinates(element);
+  for (const osmId of uniqueOsmIds) {
+    if (hasCoordinateForOsmId(coordinates, osmId)) {
+      continue;
+    }
 
-    if (point) {
-      coordinates.set(String(element.id), point);
+    const station = await lookupGasStationFromNominatim(osmId);
+
+    if (station) {
+      coordinates.set(osmId, { lat: station.lat, lon: station.lon });
     }
   }
 

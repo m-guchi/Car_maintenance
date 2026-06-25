@@ -50,11 +50,7 @@ run_setup() {
     exit 1
   fi
 
-  if ! ss -tln 2>/dev/null | grep -q ':3306 '; then
-    echo "Error: MySQL が起動していません。" >&2
-    echo "  sudo service mysql start" >&2
-    exit 1
-  fi
+  bash "$ROOT/scripts/ensure-mysql.sh"
 
   sudo mysql <<EOSQL
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`

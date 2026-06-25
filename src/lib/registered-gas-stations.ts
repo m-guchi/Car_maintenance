@@ -352,8 +352,13 @@ export async function updateRegisteredGasStationForUser(
   let nextLongitude: number | null = null;
 
   if (nextOsmId) {
-    nextLatitude = null;
-    nextLongitude = null;
+    if (nextOsmId !== existing.osmId) {
+      nextLatitude = null;
+      nextLongitude = null;
+    } else {
+      nextLatitude = existing.latitude;
+      nextLongitude = existing.longitude;
+    }
   } else {
     const manualLocation = parseManualLocation(
       input.latitude ?? null,

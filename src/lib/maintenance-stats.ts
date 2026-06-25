@@ -1,4 +1,5 @@
 import { computeTotalOdometerKm } from "@/lib/fuel-types";
+import { buildMaintenanceCategoryColorIndexById } from "@/lib/maintenance-category-colors";
 import type { MaintenanceCategoryRecord } from "@/lib/maintenance-category-types";
 import type { MaintenanceLogClientRecord } from "@/lib/maintenance-types";
 
@@ -254,9 +255,7 @@ export function buildMaintenanceChartData(
   maintenanceLogs: MaintenanceLogClientRecord[],
   vehicleInitialOdometer: number | null | undefined,
 ): MaintenanceChartData {
-  const categoryIndexById = new Map(
-    categories.map((category, index) => [category.id, index]),
-  );
+  const categoryIndexById = buildMaintenanceCategoryColorIndexById(categories);
 
   const timeline = buildOdometerTimeline(
     fuelLogs,

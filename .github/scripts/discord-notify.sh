@@ -5,7 +5,7 @@
 # 各アプリの .github/scripts/ にコピーして使用する。
 #
 # Requires: DISCORD_WEBHOOK_URL, NOTIFY_STATUS (success|failure|cancelled)
-# Optional: NOTIFY_APP, NOTIFY_KIND (e.g. デプロイ / CI), NOTIFY_JOB, NOTIFY_WORKFLOW
+# Optional: NOTIFY_APP, NOTIFY_KIND (e.g. デプロイ / CI), NOTIFY_JOB, NOTIFY_WORKFLOW, NOTIFY_VERSION
 set -euo pipefail
 
 if [[ -z "${DISCORD_WEBHOOK_URL:-}" ]]; then
@@ -16,6 +16,7 @@ fi
 status="${NOTIFY_STATUS:-unknown}"
 app_name="${NOTIFY_APP:-}"
 kind="${NOTIFY_KIND:-}"
+version="${NOTIFY_VERSION:-}"
 workflow_name="${NOTIFY_WORKFLOW:-${GITHUB_WORKFLOW:-GitHub Actions}}"
 job_name="${NOTIFY_JOB:-${GITHUB_JOB:-}}"
 repository="${GITHUB_REPOSITORY:-}"
@@ -48,7 +49,11 @@ case "$status" in
 esac
 
 if [[ -n "$app_name" && -n "$kind" ]]; then
-  title="${emoji} [${app_name}] ${kind} ${status_label}"
+  if [[ "$kind" = "リリース" && -n "$version" ]]; then
+    title="${emoji} [${app_name}] ${kind} ${version} ${status_label}"
+  else
+    title="${emoji} [${app_name}] ${kind} ${status_label}"
+  fi
 elif [[ -n "$app_name" ]]; then
   title="${emoji} [${app_name}] ${workflow_name} ${status_label}"
 else
@@ -58,6 +63,7 @@ fi
 export NOTIFY_STATUS="$status"
 export NOTIFY_APP="$app_name"
 export NOTIFY_KIND="$kind"
+export NOTIFY_VERSION="$version"
 export NOTIFY_WORKFLOW="$workflow_name"
 export NOTIFY_JOB="$job_name"
 export REPOSITORY="$repository"
@@ -72,6 +78,7 @@ import os
 
 app_name = os.environ.get("NOTIFY_APP", "")
 kind = os.environ.get("NOTIFY_KIND", "")
+version = os.environ.get("NOTIFY_VERSION", "")
 job_name = os.environ.get("NOTIFY_JOB", "")
 event_name = os.environ.get("GITHUB_EVENT_NAME", "")
 repository = os.environ.get("REPOSITORY", "")
@@ -87,6 +94,8 @@ if app_name:
     fields.append({"name": "App", "value": app_name, "inline": True})
 if kind:
     fields.append({"name": "Type", "value": kind, "inline": True})
+if version:
+    fields.append({"name": "Version", "value": f"`{version}`", "inline": True})
 if repository:
     fields.append({"name": "Repository", "value": f"`{repository}`", "inline": True})
 if ref_name:
